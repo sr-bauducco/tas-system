@@ -35,3 +35,4 @@ The system is divided into three functional agents orchestrated through a MAPE-K
     G6: tas.analysis.AnalysisAgent (Autonomic Loop)
 
     G10: tas.goals.G10NotifyEmergency
+--
