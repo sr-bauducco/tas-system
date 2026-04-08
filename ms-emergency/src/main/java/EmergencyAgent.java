@@ -16,8 +16,6 @@ public class EmergencyAgent implements G10NotifyEmergency {
 
     @Override
     public Mono<FulfillmentStatus> execute(EmergencyContext context) {
-        // The Agent evaluates the context to decide which Plan (P9 or P10) to execute
-        
         if (context.severity() > 80.0) {
             System.out.println("High Severity: Selecting Plan P9");
             return executeP9CallAmbulance(context);
@@ -27,9 +25,7 @@ public class EmergencyAgent implements G10NotifyEmergency {
         }
     }
 
-    // ==========================================
-    // PLAN P9: Alarm Service
-    // ==========================================
+    // P9: Alarm Service
     private Mono<FulfillmentStatus> executeP9CallAmbulance(EmergencyContext context) {
         return webClient.post()
             .uri("http://hospital-api/ambulance/dispatch")
@@ -40,9 +36,7 @@ public class EmergencyAgent implements G10NotifyEmergency {
             .onErrorResume(error -> executeP10SendSMS(context)); 
     }
 
-    // ==========================================
-    // PLAN P10: Send SMS
-    // ==========================================
+    // P10: Send SMS
     private Mono<FulfillmentStatus> executeP10SendSMS(EmergencyContext context) {
         return webClient.post()
             .uri("http://twilio-gateway/sms/send")

@@ -15,7 +15,7 @@
 
     <modules>
         <module>api-definitions</module>
-        <module>microservices/emergency-service</module>
+        <module>ms-emergency</module>
     </modules>
 
     <properties>

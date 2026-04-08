@@ -9,3 +9,7 @@ Modular TAS implementation following the GoalD pattern: Definition vs Implementa
 
 ## Build
 Run: mvn clean install
+
+## Running:
+    cd ms-emergency 
+    mvn spring-boot:run
