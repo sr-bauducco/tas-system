@@ -16,10 +16,10 @@ Run: mvn clean install
 
 ## Testing:
 1. 
+    for i in {1..10}; do
     curl -X POST http://localhost:8080/notify \
     -H "Content-Type: application/json" \
-    -d '{"patientId":"P-001", "alertType":"Tachycardia", "severity": 95.0}'
-2. 
-    curl -X POST http://localhost:8080/notify \
-    -H "Content-Type: application/json" \
-    -d '{"patientId":"P-001", "alertType":"Fever", "severity": 75.0}'
+    -d "{\"patientId\":\"P-00$i\", \"alertType\":\"Tachycardia\", \"severity\": 90.0}" &
+    done
+    wait   
+    echo "All concurrent requests fired."
