@@ -5,7 +5,7 @@ Modular TAS implementation following the GoalD pattern: Definition vs Implementa
 
 ## Structure
 - /api-definitions: Shared Goal interfaces (contracts).
-- /microservices: Autonomous implementation agents.
+- /ms-emergency: Agent implementation
 
 ## Build
 Run: mvn clean install
