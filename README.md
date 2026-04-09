@@ -13,3 +13,13 @@ Run: mvn clean install
 ## Running:
     cd ms-emergency 
     mvn spring-boot:run
+
+## Testing:
+1. 
+    curl -X POST http://localhost:8080/notify \
+    -H "Content-Type: application/json" \
+    -d '{"patientId":"P-001", "alertType":"Tachycardia", "severity": 95.0}'
+2. 
+    curl -X POST http://localhost:8080/notify \
+    -H "Content-Type: application/json" \
+    -d '{"patientId":"P-001", "alertType":"Fever", "severity": 75.0}'

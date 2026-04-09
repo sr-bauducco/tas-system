@@ -1,47 +1,34 @@
 package tas.services.emergency;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import tas.goals.G10NotifyEmergency;
 import reactor.core.publisher.Mono;
+import jakarta.annotation.PostConstruct;
 
-@Service
+@RestController
 public class EmergencyAgent implements G10NotifyEmergency {
 
-    private final WebClient webClient;
-
-    public EmergencyAgent(WebClient.Builder builder) {
-        this.webClient = builder.build();
+    @PostConstruct
+    public void init() {
+        System.out.println("\n=========================================================");
+        System.out.println("[G10 AGENT READY] Emergency Service Listening on Port 8080");
+        System.out.println("=========================================================\n");
     }
 
+    @PostMapping("/notify")
     @Override
-    public Mono<FulfillmentStatus> execute(EmergencyContext context) {
+    public Mono<FulfillmentStatus> execute(@RequestBody EmergencyContext context) {
+        System.out.println("\n[🚨 G10 EXECUTION TRIGGERED] Context: " + context);
+        
         if (context.severity() > 80.0) {
-            System.out.println("High Severity: Selecting Plan P9");
-            return executeP9CallAmbulance(context);
+            System.out.println("[PLAN P9] Executing Call Ambulance...");
         } else {
-            System.out.println("Moderate Severity: Selecting Plan P10");
-            return executeP10SendSMS(context);
+            System.out.println("[PLAN P10] Executing Send SMS...");
         }
-    }
-
-    // P9: Alarm Service
-    private Mono<FulfillmentStatus> executeP9CallAmbulance(EmergencyContext context) {
-        return webClient.post()
-            .uri("http://hospital-api/ambulance/dispatch")
-            .bodyValue(context)
-            .retrieve()
-            .bodyToMono(FulfillmentStatus.class)
-            // If P9 fails, we adapt and immediately try P10 as a fallback
-            .onErrorResume(error -> executeP10SendSMS(context)); 
-    }
-
-    // P10: Send SMS
-    private Mono<FulfillmentStatus> executeP10SendSMS(EmergencyContext context) {
-        return webClient.post()
-            .uri("http://twilio-gateway/sms/send")
-            .bodyValue(context)
-            .retrieve()
-            .bodyToMono(FulfillmentStatus.class);
+        
+        System.out.println("Notification Dispatched Successfully.");
+        return Mono.just(new FulfillmentStatus("SUCCESS", "MOCK_EMERGENCY_GATEWAY"));
     }
 }
