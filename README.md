@@ -7,7 +7,6 @@ Following the GoalD framework and Magnus Larsson's patterns:
 - **ms-analysis**: (G6) Orchestrator of the autonomic loop (Port 8082).
 - **ms-emergency**: (G10) Emergency notification dispatcher (Port 8080).
 
-<<<<<<< HEAD
 ## Structure
 - /api-definitions: Shared Goal interfaces (contracts).
 - /ms-emergency: Agent implementation
@@ -28,14 +27,3 @@ Run: mvn clean install
     done
     wait   
     echo "All concurrent requests fired."
-=======
-## Execution Guide
-1. **Compilation**:
-   mvn clean install
-
-2. **Run Services**:
-   (Open 3 terminals)
-   - Terminal 1: cd ms-emergency && mvn spring-boot:run
-   - Terminal 2: cd ms-monitor && mvn spring-boot:run
-   - Terminal 3: cd ms-analysis && mvn spring-boot:run
->>>>>>> main
