@@ -17,8 +17,6 @@
     <modules>
         <module>api-definitions</module>
         <module>ms-emergency</module>
-        <module>ms-monitor</module>
-        <module>ms-analysis</module>
     </modules>
 
     <properties>
