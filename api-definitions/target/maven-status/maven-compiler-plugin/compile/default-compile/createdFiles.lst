@@ -1,3 +1,6 @@
+tas/system/api/goals/G12ChangeDose$FulfillmentStatus.class
 tas/goals/G10NotifyEmergency$EmergencyContext.class
+tas/system/api/goals/G12ChangeDose.class
+tas/system/api/goals/G12ChangeDose$DoseContext.class
 tas/goals/G10NotifyEmergency.class
 tas/goals/G10NotifyEmergency$FulfillmentStatus.class
