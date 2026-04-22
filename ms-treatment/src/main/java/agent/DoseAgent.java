@@ -1,40 +1,33 @@
-package tas.system.treatment.agent;
+package agent;
 
 import org.springframework.web.bind.annotation.*;
-import tas.system.api.goals.G12ChangeDose;
 import reactor.core.publisher.Mono;
+import api.*;
+import goals.*;
+import service.DoseService;
 
 @RestController
-@RequestMapping("/g12")
+@RequestMapping("/treatment/g12")
 public class DoseAgent implements G12ChangeDose {
+
+    private final DoseService doseService;
+
+    public DoseAgent(DoseService doseService) {
+        this.doseService = doseService;
+    }
 
     @PostMapping("/execute")
     @Override
-    public Mono<FulfillmentStatus> execute(@RequestBody DoseContext context) {
-        
-        // 1. EVALUATE FEASIBILITY (Context C4)
-        // Per GoalD: If the required context for the plan is missing, the goal is UNFEASIBLE.
-        if (!context.isDrugAdministered()) {
-            return Mono.just(new FulfillmentStatus(
-                "UNFEASIBLE", 
-                "P8", 
-                "Plan P8 rejected: Drug is not currently being administered (C4 inactive)."
-            ));
-        }
-
-        // 2. EXECUTE PLAN P8
-        return executePlanP8(context);
-    }
-
-    /**
-     * PLAN P8: Change Dose Logic
-     * This is the atomic task that achieves Goal G12.
-     */
-    private Mono<FulfillmentStatus> executePlanP8(DoseContext ctx) {
-        return Mono.just(new FulfillmentStatus(
-            "SUCCESS", 
-            "P8", 
-            "Dosage successfully changed to " + ctx.requestedDose() + " for Patient " + ctx.patientId()
-        ));
+    public Mono<FulfillmentStatus> executeChangeDose(@RequestBody DoseRequest request) {
+        return Mono.just(request.context())
+            .flatMap(ctx -> {
+                // Feasibility Guard C4: Drug must already be administered
+                if (!ctx.isDrugAdministered()) {
+                    return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C4 Violation: Drug not yet administered"));
+                }
+                return doseService.updateDose(request.patientId(), request.newDose())
+                    .map(success -> new FulfillmentStatus(Status.SUCCESS, "Dose updated via P8"))
+                    .onErrorResume(e -> Mono.just(new FulfillmentStatus(Status.FAILURE, e.getMessage())));
+            });
     }
 }

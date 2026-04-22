@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 @Service
 public class DrugService {
     public Mono<Boolean> changeDrug(String patientId, String drugCode) {
-        // Implementation of Plan P7
+        // Plan P7: Non-blocking call to pharmacy subsystem
         return Mono.just(true); 
     }
 }

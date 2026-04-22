@@ -1,5 +1,6 @@
 package goals;
 
-public class DoseContext {
-    
-}
+public record DoseContext(
+    boolean isDrugAdministered,
+    double currentDose
+) {}
