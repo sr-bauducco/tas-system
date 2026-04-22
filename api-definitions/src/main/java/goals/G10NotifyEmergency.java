@@ -1,5 +1,4 @@
-package tas.goals;
-
+package goals;
 import reactor.core.publisher.Mono;
 
 public interface G10NotifyEmergency {

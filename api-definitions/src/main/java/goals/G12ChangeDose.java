@@ -1,5 +1,4 @@
-package tas.system.api.goals;
-
+package goals;
 import reactor.core.publisher.Mono;
 
 public interface G12ChangeDose {
