@@ -1,4 +1,6 @@
-package goals;
+package goals.request;
+
+import goals.context.EmergencyContext;
 
 public record EmergencyRequest(
     String patientId,

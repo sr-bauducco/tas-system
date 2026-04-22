@@ -1,4 +1,4 @@
-package goals;
+package goals.context;
 
 public record DoseContext(
     boolean isDrugAdministered,

@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import api.*;
 import goals.*;
+import goals.definition.G10NotifyEmergency;
+import goals.request.EmergencyRequest;
 
 /**
  * GoalD Agent for G10: Notify Emergency.

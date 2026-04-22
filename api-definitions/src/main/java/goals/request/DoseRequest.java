@@ -1,4 +1,6 @@
-package goals;
+package goals.request;
+
+import goals.context.DoseContext;
 
 public record DoseRequest(
     String patientId,
