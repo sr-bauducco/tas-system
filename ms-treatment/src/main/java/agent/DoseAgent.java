@@ -2,8 +2,12 @@ package agent;
 
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import api.*;
-import goals.*;
+import api.FulfillmentStatus;
+import api.Status;
+// --- Updated Specific Imports ---
+import goals.definition.G12ChangeDose;
+import goals.request.DoseRequest;
+import goals.context.DoseContext;
 import service.DoseService;
 
 @RestController
@@ -21,7 +25,7 @@ public class DoseAgent implements G12ChangeDose {
     public Mono<FulfillmentStatus> executeChangeDose(@RequestBody DoseRequest request) {
         return Mono.just(request.context())
             .flatMap(ctx -> {
-                // Feasibility Guard C4: Drug must already be administered
+                // Feasibility Guard C4
                 if (!ctx.isDrugAdministered()) {
                     return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C4 Violation: Drug not yet administered"));
                 }

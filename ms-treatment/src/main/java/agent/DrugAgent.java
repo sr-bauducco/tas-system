@@ -2,8 +2,12 @@ package agent;
 
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import api.*;
-import goals.*;
+import api.FulfillmentStatus;
+import api.Status;
+// --- Updated Specific Imports ---
+import goals.definition.G11ChangeDrug;
+import goals.request.DrugRequest;
+import goals.context.DrugContext;
 import service.DrugService;
 
 @RestController
@@ -21,7 +25,7 @@ public class DrugAgent implements G11ChangeDrug {
     public Mono<FulfillmentStatus> executeChangeDrug(@RequestBody DrugRequest request) {
         return Mono.just(request.context())
             .flatMap(ctx -> {
-                // Feasibility Guard C3: Doctor must be present
+                // Feasibility Guard C3
                 if (!ctx.isDoctorPresent()) {
                     return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C3 Violation: Doctor required"));
                 }
