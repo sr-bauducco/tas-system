@@ -60,16 +60,19 @@ public class SystemOrchestrationTest {
 
     @Test
     void test_G9_Self_Adaptive_Loop() {
+        // G9 Orchestration: G11 is unfeasible (no doctor), should fallback to G12 (feasible)
         MedicineRequest req = new MedicineRequest("P1", "MED", 50.0, 
-            new DrugContext(false, "NONE"), 
-            new DoseContext(true, 10.0));
+            new goals.context.DrugContext(false, "NONE"), 
+            new goals.context.DoseContext(true, 10.0));
 
         treatmentClient.post().uri("/treatment/g9/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(req)
             .exchange()
             .expectStatus().isOk()
-            .expectBody().jsonPath("$.status").isEqualTo("SUCCESS")
-            .jsonPath("$.message").isEqualTo("Dose updated via P8");
+            .expectBody()
+            .jsonPath("$.status").isEqualTo("SUCCESS")
+            // We use value(containsString(...)) or just update the expected string:
+            .jsonPath("$.message").isEqualTo("[Adapted via G12] Dose updated via P8");
     }
 }

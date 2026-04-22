@@ -1,39 +1,59 @@
 package agent;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import api.*;
-import goals.definition.*;
-import goals.request.*;
-import goals.context.*;
+import api.FulfillmentStatus;
+import api.Status;
+import goals.definition.G9AdministerMedicine;
+import goals.request.MedicineRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/treatment/g9")
-public class AdministerMedicineOrchestrator {
+public class AdministerMedicineOrchestrator implements G9AdministerMedicine {
 
-    private final DrugAgent drugAgent; // G11
-    private final DoseAgent doseAgent; // G12
+    private static final Logger log = LoggerFactory.getLogger(AdministerMedicineOrchestrator.class);
+    
+    private final DrugAgent drugAgent;
+    private final DoseAgent doseAgent;
+    private final Counter adaptationCounter;
 
-    public AdministerMedicineOrchestrator(DrugAgent drugAgent, DoseAgent doseAgent) {
+    public AdministerMedicineOrchestrator(DrugAgent drugAgent, DoseAgent doseAgent, MeterRegistry registry) {
         this.drugAgent = drugAgent;
         this.doseAgent = doseAgent;
+        
+        this.adaptationCounter = Counter.builder("tas.adaptation.count")
+            .description("Number of times G9 adapted from G11 to G12")
+            .tag("goal", "G9")
+            .tag("strategy", "fallback")
+            .register(registry);
     }
 
     @PostMapping("/execute")
+    @Override
     public Mono<FulfillmentStatus> administerMedicine(@RequestBody MedicineRequest request) {
-        System.out.println("G9 Orchestrator: Starting Administer Medicine sequence...");
+        log.info("[G9] Initiating administration sequence for patient: {}", request.patientId());
 
-        // Strategy 1: Attempt Goal G11 (Change Drug)
         return drugAgent.executeChangeDrug(request.toDrugRequest())
-            .flatMap(status -> {
-                if (status.status() == Status.UNFEASIBLE) {
-                    System.out.println("G9 Adaptation: G11 unfeasible. Attempting Goal G12 (Change Dose)...");
+            .flatMap(result -> {
+                if (result.status() == Status.UNFEASIBLE) {
+                    adaptationCounter.increment();
+                    log.warn("[G9] G11 unfeasible. Triggering fallback to G12.");
                     
-                    // Strategy 2: Fallback to Goal G12 (Change Dose)
-                    return doseAgent.executeChangeDose(request.toDoseRequest());
+                    return doseAgent.executeChangeDose(request.toDoseRequest())
+                        .map(doseRes -> new FulfillmentStatus(
+                            doseRes.status(), 
+                            "[Adapted via G12] " + doseRes.message()
+                        ));
                 }
-                return Mono.just(status);
+                return Mono.just(result);
             })
-            .onErrorResume(e -> Mono.just(new FulfillmentStatus(Status.FAILURE, "G9 Orchestration Error: " + e.getMessage())));
+            .onErrorResume(e -> {
+                log.error("[G9] Critical failure: {}", e.getMessage());
+                return Mono.just(new FulfillmentStatus(Status.FAILURE, "G9 Orchestration Error"));
+            });
     }
-}
+} // <--- This was likely the missing brace!
