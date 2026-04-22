@@ -1,37 +1,68 @@
 #!/bin/bash
 
-echo "🚀 Performing Hard Reset and System Initialization..."
+# ==============================================================================
+# TAS System Lifecycle & Automated Validation Utility
+# Purpose: Orchestrates the build, deployment, and testing of GoalD services.
+# Usage: ./run-system.sh
+# ==============================================================================
 
-# 1. Kill any existing TAS processes to free up ports 8083/8084
-pkill -f 'ms-treatment' || true
-pkill -f 'ms-emergency' || true
+set -e # Exit on any command failure
 
-# 2. Rebuild and Repackage
-echo "📦 Building executable JARs..."
-mvn clean install -DskipTests
-if [ $? -ne 0 ]; then echo "❌ Build failed"; exit 1; fi
+# --- Configuration ---
+TREATMENT_JAR="ms-treatment/target/ms-treatment-1.0-SNAPSHOT.jar"
+EMERGENCY_JAR="ms-emergency/target/ms-emergency-1.0-SNAPSHOT.jar"
+WAIT_SECONDS=25
 
-# 3. Start Services
-echo "🔌 Starting ms-treatment (8083)..."
-java -jar ms-treatment/target/ms-treatment-1.0-SNAPSHOT.jar > treatment.log 2>&1 &
-echo "🔌 Starting ms-emergency (8084)..."
-java -jar ms-emergency/target/ms-emergency-1.0-SNAPSHOT.jar > emergency.log 2>&1 &
+# --- Cleanup Logic ---
+cleanup() {
+    echo "[INFO] Commencing system shutdown and process cleanup..."
+    pkill -f 'ms-treatment' || true
+    pkill -f 'ms-emergency' || true
+}
 
-# 4. Wait for stability
-echo "⏳ Waiting 25 seconds for full system readiness..."
-sleep 25
+# Ensure cleanup is triggered on script exit, interruption, or termination
+trap cleanup EXIT SIGINT SIGTERM
 
-# 5. Run Automated Tests
-echo "🧪 Running SystemOrchestrationTest..."
-mvn test -pl ms-treatment -Dtest=SystemOrchestrationTest
-TEST_RESULT=$?
+log_info() {
+    echo "[INFO] $(date +'%Y-%m-%d %H:%M:%S') - $1"
+}
 
-# 6. Cleanup
-pkill -f 'ms-treatment'
-pkill -f 'ms-emergency'
+log_error() {
+    echo "[ERROR] $(date +'%Y-%m-%d %H:%M:%S') - $1" >&2
+}
 
-if [ $TEST_RESULT -eq 0 ]; then
-    echo "✅ SYSTEM FULLY VERIFIED: G10, G11, G12, and G9 are all operational."
-else
-    echo "❌ VERIFICATION FAILED. Check emergency.log for 404 details."
+# --- Main Execution ---
+
+log_info "Initiating TAS Reactive Architecture build phase..."
+mvn clean install -DskipTests -q
+if [ $? -ne 0 ]; then
+    log_error "Maven build failed. Aborting deployment."
+    exit 1
 fi
+
+log_info "Verifying executable artifacts..."
+if [[ ! -f "$TREATMENT_JAR" || ! -f "$EMERGENCY_JAR" ]]; then
+    log_error "One or more target JAR files are missing. Verify pom.xml repackage settings."
+    exit 1
+fi
+
+log_info "Starting ms-treatment on port 8083..."
+java -jar "$TREATMENT_JAR" > treatment-service.log 2>&1 &
+
+log_info "Starting ms-emergency on port 8084..."
+java -jar "$EMERGENCY_JAR" > emergency-service.log 2>&1 &
+
+log_info "Waiting ${WAIT_SECONDS}s for full system convergence..."
+sleep "$WAIT_SECONDS"
+
+log_info "Executing automated system-wide validation (G9, G10, G11, G12)..."
+mvn test -pl ms-treatment -Dtest=SystemOrchestrationTest
+TEST_STATUS=$?
+
+if [ $TEST_STATUS -eq 0 ]; then
+    log_info "SYSTEM VALIDATION SUCCESSFUL: All architectural goals verified."
+else
+    log_error "SYSTEM VALIDATION FAILED: Review service logs for details."
+fi
+
+exit $TEST_STATUS

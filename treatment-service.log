@@ -1,0 +1,15 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.1.5)
+
+2026-04-22T18:12:11.094-03:00  INFO 149602 --- [           main] treatment.TreatmentApplication           : Starting TreatmentApplication using Java 17.0.18 with PID 149602 (/home/sr-bauducco/tas-system/ms-treatment/target/ms-treatment-1.0-SNAPSHOT.jar started by sr-bauducco in /home/sr-bauducco/tas-system)
+2026-04-22T18:12:11.104-03:00  INFO 149602 --- [           main] treatment.TreatmentApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-04-22T18:12:15.685-03:00  INFO 149602 --- [           main] o.s.b.web.embedded.netty.NettyWebServer  : Netty started on port 8083
+2026-04-22T18:12:15.733-03:00  INFO 149602 --- [           main] treatment.TreatmentApplication           : Started TreatmentApplication in 5.881 seconds (process running for 7.337)
+G9 Orchestrator: Starting Administer Medicine sequence...
+G9 Adaptation: G11 unfeasible. Attempting Goal G12 (Change Dose)...
