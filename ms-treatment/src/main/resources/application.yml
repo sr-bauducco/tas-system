@@ -1,5 +1,32 @@
 server:
   port: 8083
+
 spring:
   application:
     name: ms-treatment
+
+# Spring Boot Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Custom Application Information
+info:
+  app:
+    name: "TAS Treatment Service"
+    description: "GoalD Medication Administration Subsystem"
+    version: "1.0.0"
+
+# Logging Levels for GoalD Traceability
+logging:
+  level:
+    agent: DEBUG
+    org.springframework.web: INFO
