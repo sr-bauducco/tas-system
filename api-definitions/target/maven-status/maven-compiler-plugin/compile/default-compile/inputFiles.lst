@@ -1,7 +1,5 @@
-<<<<<<< HEAD
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/DrugRequest.java
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/G11ChangeDrug.java
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/DrugContext.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/G10NotifyEmergency.java
-=======
-/home/sr-bauducco/tas-system/api-definitions/src/main/java/tas/goals/G1GetVitalParams.java
-/home/sr-bauducco/tas-system/api-definitions/src/main/java/tas/goals/G10NotifyEmergency.java
-/home/sr-bauducco/tas-system/api-definitions/src/main/java/tas/goals/G6AnalyzeData.java
->>>>>>> main
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/G12ChangeDose.java
