@@ -1,6 +1,7 @@
 package goals.request;
 
-import goals.context.*;
+import goals.context.DrugContext;
+import goals.context.DoseContext;
 
 public record MedicineRequest(
     String patientId,
@@ -9,6 +10,10 @@ public record MedicineRequest(
     DrugContext drugContext,
     DoseContext doseContext
 ) {
-    public DrugRequest toDrugRequest() { return new DrugRequest(patientId, drugCode, drugContext); }
-    public DoseRequest toDoseRequest() { return new DoseRequest(patientId, dose, doseContext); }
+    public DrugRequest toDrugRequest() { 
+        return new DrugRequest(patientId, drugCode, drugContext); 
+    }
+    public DoseRequest toDoseRequest() { 
+        return new DoseRequest(patientId, dose, doseContext); 
+    }
 }

@@ -1,3 +1,4 @@
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/DrugRequest.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/context/EmergencyContext.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/context/DrugContext.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/api/FulfillmentStatus.java
@@ -6,7 +7,7 @@
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/definition/G10NotifyEmergency.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/DoseRequest.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/api/Status.java
-/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/DrugRequest.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/definition/G11ChangeDrug.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/MedicineRequest.java
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/definition/G9AdministerMedicine.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/context/DoseContext.java

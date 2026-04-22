@@ -2,17 +2,22 @@ package agent;
 
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import api.*;
-import goals.definition.*;
-import goals.request.*;
-import goals.context.*;
+import api.FulfillmentStatus;
+import api.Status;
+import goals.definition.G9AdministerMedicine;
+import goals.request.MedicineRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/treatment/g9")
-public class AdministerMedicineOrchestrator {
+public class AdministerMedicineOrchestrator implements G9AdministerMedicine {
 
-    private final DrugAgent drugAgent; // G11
-    private final DoseAgent doseAgent; // G12
+    private static final Logger log = LoggerFactory.getLogger(AdministerMedicineOrchestrator.class);
+    
+    private final DrugAgent drugAgent; // Goal G11
+    private final DoseAgent doseAgent; // Goal G12
 
     public AdministerMedicineOrchestrator(DrugAgent drugAgent, DoseAgent doseAgent) {
         this.drugAgent = drugAgent;
@@ -20,20 +25,31 @@ public class AdministerMedicineOrchestrator {
     }
 
     @PostMapping("/execute")
+    @Override
     public Mono<FulfillmentStatus> administerMedicine(@RequestBody MedicineRequest request) {
-        System.out.println("G9 Orchestrator: Starting Administer Medicine sequence...");
+        log.info("[G9] Initiating administration sequence for patient: {}", request.patientId());
 
-        // Strategy 1: Attempt Goal G11 (Change Drug)
+        // Step 1: Attempt preferred Strategy (G11 - Change Drug)
         return drugAgent.executeChangeDrug(request.toDrugRequest())
-            .flatMap(status -> {
-                if (status.status() == Status.UNFEASIBLE) {
-                    System.out.println("G9 Adaptation: G11 unfeasible. Attempting Goal G12 (Change Dose)...");
+            .flatMap(result -> {
+                // Step 2: Check for Unfeasibility (C3 Violation)
+                if (result.status() == Status.UNFEASIBLE) {
+                    log.warn("[G9] Strategy G11 unfeasible: {}. Triggering Adaptation...", result.message());
                     
-                    // Strategy 2: Fallback to Goal G12 (Change Dose)
-                    return doseAgent.executeChangeDose(request.toDoseRequest());
+                    // Step 3: Adaptation - Fallback to Strategy G12 (Change Dose)
+                    return doseAgent.executeChangeDose(request.toDoseRequest())
+                        .map(doseResult -> new FulfillmentStatus(
+                            doseResult.status(),
+                            "[Adapted via G12] " + doseResult.message()
+                        ));
                 }
-                return Mono.just(status);
+                
+                // If G11 was successful or failed definitively, return its result
+                return Mono.just(result);
             })
-            .onErrorResume(e -> Mono.just(new FulfillmentStatus(Status.FAILURE, "G9 Orchestration Error: " + e.getMessage())));
+            .onErrorResume(e -> {
+                log.error("[G9] Critical failure in orchestration: {}", e.getMessage());
+                return Mono.just(new FulfillmentStatus(Status.FAILURE, "G9 Orchestration Error"));
+            });
     }
 }
