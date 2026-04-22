@@ -1,1 +1,13 @@
-nenhum atributo de manifesto principal em ms-emergency/target/ms-emergency-1.0-SNAPSHOT.jar
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.1.5)
+
+2026-04-22T18:08:55.141-03:00  INFO 146905 --- [           main] emergency.EmergencyApplication           : Starting EmergencyApplication using Java 17.0.18 with PID 146905 (/home/sr-bauducco/tas-system/ms-emergency/target/ms-emergency-1.0-SNAPSHOT.jar started by sr-bauducco in /home/sr-bauducco/tas-system)
+2026-04-22T18:08:55.156-03:00  INFO 146905 --- [           main] emergency.EmergencyApplication           : No active profile set, falling back to 1 default profile: "default"
+2026-04-22T18:08:59.288-03:00  INFO 146905 --- [           main] o.s.b.web.embedded.netty.NettyWebServer  : Netty started on port 8084
+2026-04-22T18:08:59.339-03:00  INFO 146905 --- [           main] emergency.EmergencyApplication           : Started EmergencyApplication in 5.616 seconds (process running for 6.795)
