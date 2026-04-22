@@ -8,4 +8,5 @@
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/api/Status.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/DrugRequest.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/definition/G11ChangeDrug.java
+/home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/request/MedicineRequest.java
 /home/sr-bauducco/tas-system/api-definitions/src/main/java/goals/context/DoseContext.java

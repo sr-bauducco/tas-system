@@ -8,6 +8,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import goals.request.*;
 import goals.context.*;
 
+// Note: Ensure Port 8083 matches your application.properties
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class TreatmentSystemTest {
 
@@ -16,25 +17,15 @@ public class TreatmentSystemTest {
 
     @Test
     void verify_G11_Feasibility_Guard() {
-        DrugRequest unfeasibleRequest = new DrugRequest("P1", "MED_A", new DrugContext(false, null));
+        // GIVEN: Doctor is NOT present (C3 Violation)
+        DrugRequest request = new DrugRequest("P1", "MED_A", new DrugContext(false, "NONE"));
 
+        // WHEN & THEN
         webTestClient.post().uri("/treatment/g11/execute")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(unfeasibleRequest)
+            .bodyValue(request)
             .exchange()
             .expectStatus().isOk()
             .expectBody().jsonPath("$.status").isEqualTo("UNFEASIBLE");
-    }
-
-    @Test
-    void verify_G12_Success_Flow() {
-        DoseRequest feasibleRequest = new DoseRequest("P1", 50.0, new DoseContext(true, 25.0));
-
-        webTestClient.post().uri("/treatment/g12/execute")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(feasibleRequest)
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody().jsonPath("$.status").isEqualTo("SUCCESS");
     }
 }

@@ -3,6 +3,7 @@ goals/definition/G12ChangeDose.class
 api/Status.class
 goals/request/EmergencyRequest.class
 goals/context/EmergencyContext.class
+goals/request/MedicineRequest.class
 goals/request/DrugRequest.class
 goals/definition/G11ChangeDrug.class
 goals/request/DoseRequest.class
