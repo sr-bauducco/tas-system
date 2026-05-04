@@ -2,14 +2,17 @@ package agent;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import goals.request.*;
+import treatment.TreatmentApplication;
 import goals.context.*;
 
 // Note: Ensure Port 8083 matches your application.properties
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(classes = TreatmentApplication.class)
+@AutoConfigureWebTestClient // <-- This is the missing piece!
 public class TreatmentSystemTest {
 
     @Autowired
