@@ -11,17 +11,15 @@ spring:
           enabled: true
       routes:
         # --- TREATMENT ROUTES (G11/G12) ---
-        - id: route-treatment-g11-feasible
+        - id: route-treatment-g11
           uri: lb://MS-TREATMENT
           predicates:
             - Path=/treatment/g11/**
-            - Header=X-Context-Doctor, true
             
-        - id: route-treatment-g12-feasible
+        - id: route-treatment-g12
           uri: lb://MS-TREATMENT
           predicates:
             - Path=/treatment/g12/**
-            - Header=X-Context-Drug, true
 
         # --- EMERGENCY ROUTES (G10) ---
         - id: route-emergency-sms
@@ -35,7 +33,6 @@ spring:
           predicates:
             - Path=/emergency/g10/**
             - Header=X-Context-Internet, true
-
 eureka:
   client:
     serviceUrl:

@@ -8,25 +8,32 @@ import goals.request.DrugRequest;
 import goals.context.DrugContext;
 
 @RestController
-@RequestMapping("/treatment/g11") // Ensure this matches the Gateway path
+@RequestMapping("/treatment/g11")
 public class DrugAgent {
 
+    // 1. The HTTP REST Entry Point (Called by the API Gateway & Test Script)
     @PostMapping("/execute")
-    public Mono<FulfillmentStatus> executeChangeDrug(@RequestBody DrugRequest request) {
-        // Extract the context safely
-        DrugContext ctx = request.context();
-
-        // 1. Handle missing context (The API Gateway stripped it/didn't send it)
-        if (ctx == null) {
-            return Mono.just(new FulfillmentStatus(Status.SUCCESS, "Drug changed via G11 (Gateway Routed)"));
+    public Mono<FulfillmentStatus> executeChangeDrugRest(
+            @RequestBody DrugRequest request,
+            @RequestHeader(value = "X-Context-Doctor", required = false) String doctorPresent) {
+        
+        // Evaluate the distributed context header injected by the script/wearable
+        if ("false".equalsIgnoreCase(doctorPresent)) {
+            return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C3 Violation: Doctor not present (Header Evaluated)"));
         }
+        
+        // If the header is true or missing, proceed to the core logic
+        return executeChangeDrug(request);
+    }
 
-        // 2. Handle guard violation (if context was explicitly provided)
-        if (!ctx.isDoctorPresent()) {
+    // 2. The Internal Java Entry Point (Called directly by G9 Orchestrator)
+    public Mono<FulfillmentStatus> executeChangeDrug(DrugRequest request) {
+        DrugContext ctx = request.context();
+        
+        if (ctx != null && !ctx.isDoctorPresent()) {
             return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C3 Violation: Doctor not present"));
         }
 
-        // 3. Standard success
         return Mono.just(new FulfillmentStatus(Status.SUCCESS, "Drug changed via G11"));
     }
 }
