@@ -1,0 +1,36 @@
+server:
+  port: 8080 # The Gateway will be the primary entry point
+
+spring:
+  application:
+    name: ms-intelligence
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true # Allow Gateway to find services in Eureka
+      routes:
+        # Route 1: Emergency Notification (G10) -> SendSMS
+        # Only activated if internet is DOWN
+        - id: route-emergency-sms
+          uri: lb://MS-EMERGENCY # Route via Eureka Load Balancer
+          predicates:
+            - Path=/emergency/g10/**
+            - Header=X-Context-Internet, false
+          filters:
+            - RewritePath=/emergency/(?<segment>.*), /$\{segment}
+
+        # Route 2: Emergency Notification (G10) -> AlarmService
+        # Primary route if internet is UP
+        - id: route-emergency-alarm
+          uri: lb://MS-EMERGENCY
+          predicates:
+            - Path=/emergency/g10/**
+            - Header=X-Context-Internet, true
+          filters:
+            - RewritePath=/emergency/(?<segment>.*), /$\{segment}
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/

@@ -10,6 +10,7 @@
         <module>ms-treatment</module>
         <module>ms-registry</module>
         <module>ms-emergency</module>
+        <module>ms-intelligence</module>
     </modules>
 
     <properties>
