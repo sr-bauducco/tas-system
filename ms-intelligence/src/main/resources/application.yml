@@ -1,5 +1,5 @@
 server:
-  port: 8080 # The Gateway will be the primary entry point
+  port: 8080
 
 spring:
   application:
@@ -8,27 +8,33 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true # Allow Gateway to find services in Eureka
+          enabled: true
       routes:
-        # Route 1: Emergency Notification (G10) -> SendSMS
-        # Only activated if internet is DOWN
+        # --- TREATMENT ROUTES (G11/G12) ---
+        - id: route-treatment-g11-feasible
+          uri: lb://MS-TREATMENT
+          predicates:
+            - Path=/treatment/g11/**
+            - Header=X-Context-Doctor, true
+            
+        - id: route-treatment-g12-feasible
+          uri: lb://MS-TREATMENT
+          predicates:
+            - Path=/treatment/g12/**
+            - Header=X-Context-Drug, true
+
+        # --- EMERGENCY ROUTES (G10) ---
         - id: route-emergency-sms
-          uri: lb://MS-EMERGENCY # Route via Eureka Load Balancer
+          uri: lb://MS-EMERGENCY
           predicates:
             - Path=/emergency/g10/**
             - Header=X-Context-Internet, false
-          filters:
-            - RewritePath=/emergency/(?<segment>.*), /$\{segment}
-
-        # Route 2: Emergency Notification (G10) -> AlarmService
-        # Primary route if internet is UP
+            
         - id: route-emergency-alarm
           uri: lb://MS-EMERGENCY
           predicates:
             - Path=/emergency/g10/**
             - Header=X-Context-Internet, true
-          filters:
-            - RewritePath=/emergency/(?<segment>.*), /$\{segment}
 
 eureka:
   client:
