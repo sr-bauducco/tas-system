@@ -8,6 +8,7 @@
     <modules>
         <module>api-definitions</module>
         <module>ms-treatment</module>
+        <module>ms-registry</module>
         <module>ms-emergency</module>
     </modules>
 
