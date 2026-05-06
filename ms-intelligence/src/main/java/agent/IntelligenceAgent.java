@@ -35,8 +35,9 @@ public class IntelligenceAgent implements G6AnalyzeData {
     }
 
     private Mono<FulfillmentStatus> triggerEmergency(String patientId) {
+        // Uses Eureka Service Discovery name 'ms-emergency'
         return webClientBuilder.build().post()
-            .uri("http://ms-emergency/emergency/g10/execute") // Service discovery name
+            .uri("http://ms-emergency/emergency/g10/execute") 
             .bodyValue(new EmergencyRequest(patientId, new EmergencyContext(true, "Intelligence-G6")))
             .retrieve()
             .bodyToMono(FulfillmentStatus.class)

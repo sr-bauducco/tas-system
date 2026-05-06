@@ -1,5 +1,7 @@
 goals/definition/G12ChangeDose.class
 api/Status.class
+goals/definition/G6AnalyzeData.class
+goals/request/VitalSign.class
 api/FulfillmentStatus.class
 goals/definition/G9AdministerMedicine.class
 goals/context/DrugContext.class
