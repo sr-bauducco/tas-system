@@ -1,4 +1,4 @@
-package goals.request; // This MUST be the first line
+package goals.request;
 
 public record VitalSign(
     String patientId,

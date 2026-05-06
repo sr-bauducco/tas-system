@@ -11,6 +11,7 @@
         <module>ms-registry</module>
         <module>ms-emergency</module>
         <module>ms-intelligence</module>
+        <module>ms-monitor</module>
     </modules>
 
     <properties>
