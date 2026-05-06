@@ -10,6 +10,7 @@ goals/context/EmergencyContext.class
 goals/request/MedicineRequest.class
 goals/request/DrugRequest.class
 goals/definition/G11ChangeDrug.class
+goals/definition/G6EnactMedicalSupport.class
 goals/request/DoseRequest.class
 goals/definition/G10NotifyEmergency.class
 goals/context/DoseContext.class

@@ -1,8 +1,7 @@
 package agent;
 
-import goals.definition.G6AnalyzeData;
-import goals.request.VitalSign;
-import goals.request.EmergencyRequest;
+import goals.definition.G6EnactMedicalSupport;
+import goals.request.*;
 import goals.context.EmergencyContext;
 import api.FulfillmentStatus;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
-public class IntelligenceAgent implements G6AnalyzeData {
+public class IntelligenceAgent implements G6EnactMedicalSupport {
     private static final Logger log = LoggerFactory.getLogger(IntelligenceAgent.class);
     private final WebClient.Builder webClientBuilder;
 
@@ -21,29 +20,24 @@ public class IntelligenceAgent implements G6AnalyzeData {
     }
 
     @Override
-    public Mono<FulfillmentStatus> analyze(VitalSign vitals) {
-        log.info("[G6] Analyzing: Patient={}, HR={}, BP={}", 
-                 vitals.patientId(), vitals.heartRate(), vitals.bloodPressure());
+    public Mono<FulfillmentStatus> enact(VitalSign vitals) {
+        log.info("[G6] Enacting support for Patient: {}", vitals.patientId());
         
-        // GORE logic: If Heart Rate > 100, trigger G10 (Emergency)
         if (vitals.heartRate() > 100) {
-            log.warn("[G6] ALERT: Tachycardia detected (>100). Triggering G10!");
-            return triggerEmergency(vitals.patientId());
+            return triggerG10(vitals.patientId());
         }
-        
         return Mono.empty(); 
     }
 
-    private Mono<FulfillmentStatus> triggerEmergency(String patientId) {
-    return webClientBuilder.build().post()
-        .uri("http://ms-emergency/emergency/g10/execute") 
-        .bodyValue(new EmergencyRequest(
-            patientId, 
-            "Tachycardia", // Added the missing alertType parameter
-            new EmergencyContext(true, "Intelligence-G6")
-        ))
-        .retrieve()
-        .bodyToMono(FulfillmentStatus.class)
-        .doOnSuccess(res -> log.info("[G6] G10 Execution Result: {}", res.status()));
-}
+    private Mono<FulfillmentStatus> triggerG10(String patientId) {
+        return webClientBuilder.build().post()
+            .uri("http://ms-emergency/emergency/g10/execute")
+            .bodyValue(new EmergencyRequest(
+                patientId, 
+                "Tachycardia", // The missing 2nd parameter
+                new EmergencyContext(true, "Intelligence-G6")
+            ))
+            .retrieve()
+            .bodyToMono(FulfillmentStatus.class);
+    }
 }
