@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-intelligence
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        # --- TREATMENT ROUTES (G11/G12) ---
+        - id: route-treatment-g11
+          uri: lb://MS-TREATMENT
+          predicates:
+            - Path=/treatment/g11/**
+            
+        - id: route-treatment-g12
+          uri: lb://MS-TREATMENT
+          predicates:
+            - Path=/treatment/g12/**
+
+        # --- EMERGENCY ROUTES (G10) ---
+        - id: route-emergency-sms
+          uri: lb://MS-EMERGENCY
+          predicates:
+            - Path=/emergency/g10/**
+            - Header=X-Context-Internet, false
+            
+        - id: route-emergency-alarm
+          uri: lb://MS-EMERGENCY
+          predicates:
+            - Path=/emergency/g10/**
+            - Header=X-Context-Internet, true
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
