@@ -1,4 +1,4 @@
-    package agent;
+    package monitor;
 
     import goals.definition.G5MonitorPatient;
     import goals.request.VitalSign;
