@@ -6,30 +6,33 @@ import api.FulfillmentStatus;
 import api.Status;
 import goals.definition.G10NotifyEmergency;
 import goals.request.EmergencyRequest;
-import goals.context.EmergencyContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
-@RequestMapping("/emergency/g10")
+@RequestMapping("/emergency")
 public class EmergencyAgent implements G10NotifyEmergency {
 
-    @PostMapping("/execute")
+    private static final Logger log = LoggerFactory.getLogger(EmergencyAgent.class);
+
+    /**
+     * Strategy P10: Alarm Service (High QoS)
+     * The Gateway routes here when X-Context-C1_InternetConnection is true.
+     */
+    @PostMapping("/alarm")
     @Override
     public Mono<FulfillmentStatus> notifyEmergency(@RequestBody EmergencyRequest request) {
-        // Extract the context safely
-        EmergencyContext ctx = request.context();
-        
-        // 1. Handle the case where the context is missing from the JSON body
-        if (ctx == null) {
-            // The API Gateway already validated the headers to route us here safely!
-            return Mono.just(new FulfillmentStatus(Status.SUCCESS, "EMS Notified via P10 (Gateway Routed)"));
-        }
+        log.info("Executing High-QoS Strategy (Alarm) for patient: {}", request.patientId());
+        return Mono.just(new FulfillmentStatus(Status.SUCCESS, "EMS Notified via P10 (Alarm Service)"));
+    }
 
-        // 2. Handle the case where context was provided and violates the guard
-        if (!ctx.isInternetConnected()) {
-            return Mono.just(new FulfillmentStatus(Status.UNFEASIBLE, "C1 Violation: No Internet"));
-        }
-        
-        // 3. Handle the standard success case
-        return Mono.just(new FulfillmentStatus(Status.SUCCESS, "EMS Notified via P10"));
+    /**
+     * Strategy P9: Send SMS (Lower QoS Fallback)
+     * The Gateway routes here when the internet context is missing.
+     */
+    @PostMapping("/sms")
+    public Mono<FulfillmentStatus> notifyEmergencySmsFallback(@RequestBody EmergencyRequest request) {
+        log.warn("Executing Fallback Strategy (SMS) for patient: {}", request.patientId());
+        return Mono.just(new FulfillmentStatus(Status.SUCCESS, "EMS Notified via P9 (SMS Fallback)"));
     }
 }

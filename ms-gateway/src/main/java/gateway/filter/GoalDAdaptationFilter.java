@@ -28,26 +28,34 @@ public class GoalDAdaptationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String targetGoal = exchange.getRequest().getHeaders().getFirst("X-Target-Goal");
-        
+
         if (targetGoal != null) {
-            // Monitor: Extract contexts (e.g., X-Context-C1_InternetConnection: true)
+            // Monitor: Extract contexts
             Set<String> activeContexts = exchange.getRequest().getHeaders().entrySet().stream()
                     .filter(entry -> entry.getKey().startsWith("X-Context-") && "true".equalsIgnoreCase(entry.getValue().get(0)))
                     .map(entry -> entry.getKey().replace("X-Context-", ""))
                     .collect(Collectors.toSet());
 
             try {
-                // Analyze & Plan
-                String bestStrategyUri = planner.planBestRoute(targetGoal, activeContexts);
-                
-                // Execute: Dynamically rewrite the destination route
-                URI newUri = URI.create(bestStrategyUri);
-                exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, newUri);
-                
-                log.info("GoalD Planner: Routed Goal [{}] to Strategy [{}] under contexts {}", targetGoal, newUri, activeContexts);
+                // Analyze & Plan (e.g., returns "lb://ms-emergency/emergency/sms")
+                String bestStrategyUriString = planner.planBestRoute(targetGoal, activeContexts);
+                URI bestStrategyUri = URI.create(bestStrategyUriString);
+
+                log.info("GoalD Planner: Dynamically routing to [{}]", bestStrategyUri);
+
+                // Execute Step 1: Mutate the request path for internal Spring logging
+                org.springframework.http.server.reactive.ServerHttpRequest mutatedRequest = 
+                        exchange.getRequest().mutate().path(bestStrategyUri.getPath()).build();
+
+                // THE FIX: Execute Step 2: Set the FULL URI (Host + Path) for the Load Balancer!
+                exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, bestStrategyUri);
+
+                // Execute Step 3: Pass down the chain
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+
             } catch (Exception e) {
                 log.error("GoalD Adaptation Failed: {}", e.getMessage());
-                exchange.getResponse().setRawStatusCode(503); // Service Unavailable
+                exchange.getResponse().setRawStatusCode(503); 
                 return exchange.getResponse().setComplete();
             }
         }
@@ -57,6 +65,7 @@ public class GoalDAdaptationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return 10000; // Run early in the filter chain
+        // Run right after RouteToRequestUrlFilter (10000) but before LoadBalancer (10150)
+        return 10001; 
     }
 }

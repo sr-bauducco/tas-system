@@ -11,8 +11,8 @@ public class GoalKnowledgeBase {
     private final Map<String, List<Strategy>> dvm = new HashMap<>();
 
     public GoalKnowledgeBase() {
-        // G4: Notify Emergency Medical Services
-        dvm.put("G4_NotifyEmergency", List.of(
+        // UPDATED: Mapped to G10 instead of G4
+        dvm.put("G10_NotifyEmergency", List.of(
             new Strategy("lb://ms-emergency/emergency/alarm", List.of("C1_InternetConnection"), 25),
             new Strategy("lb://ms-emergency/emergency/sms", List.of(), 13) // Fallback
         ));

@@ -8,7 +8,13 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true # Allows Gateway to use Eureka service IDs (lb://...)
+          enabled: true
+      # Add this catch-all route to trigger the MAPE-K loop
+      routes:
+        - id: goald-manager-route
+          uri: http://localhost # This is just a placeholder! Our filter overwrites it.
+          predicates:
+            - Path=/**
 
 eureka:
   client:
