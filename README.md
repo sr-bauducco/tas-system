@@ -1,79 +1,39 @@
-# TAS: Goal-Oriented Distributed Microservices
-Tele Assistance System with GoalD Framework Integration
-### 1. Architectural Vision
+# GoalD 2.0: Reactive Tele Assistance System (TAS)
 
-The primary objective of this architecture is to decouple the system's strategic requirements (goals) from their technical implementations (microservices). By utilizing a Contextual Goal Model (CGM), the system dynamically adapts its deployment topology based on real-time environmental factors such as network availability, battery status, and sensor health.
+[![Java 17](https://img.shields.io/badge/Java-17-blue.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2023.0.0-blue.svg)](https://spring.io/projects/spring-cloud)
 
-- Key Evolutions:Transition from OSGi to Network-Isolated Processes: Replaced local bundle interactions with HTTP/REST communication using Spring WebFlux.  
-- Reactive Pipelines: Implemented non-blocking I/O using Project Reactor to handle distributed computing fallacies and high concurrency.  
-- Decentralized MAPE-K: The control loop is distributed across the infrastructure, with the API Gateway acting as a context-aware Planner.  
+This repository contains a modernized, cloud-native implementation of the **Tele Assistance System (TAS)**, originally an exemplar for self-adaptive systems. It utilizes the **GoalD Framework** principles to dynamically adapt its deployment topology based on real-time environmental contexts (e.g., internet availability, patient vitals).
 
-### 2. Distributed Goal-to-Service Mapping
+## Architectural Evolution: From OSGi to Microservices
 
-We map the GoalD Contextual Goal Model to independent microservices:
-Goal ID	Definition (Intent)	Implementation Service	Implementation Strategy
-G0	Provide Health Support	ms-tas-orchestrator	
+Originally, GoalD managed adaptability by hot-swapping local OSGi bundles within a single JVM. This project elevates the GoalD methodology into a **distributed, reactive microservices environment**:
 
-Root composite orchestrator.  
-G4	Notify Emergency Services	ms-medical-services	
+* **Network-Isolated Processes:** Implementation agents are completely decoupled into independent Spring Boot containers.
+* **Decentralized MAPE-K:** The adaptation loop is no longer a centralized monolith. Context monitoring and execution are handled via network routing.
+* **Reactive Non-Blocking I/O:** Built on Spring WebFlux and Project Reactor to handle distributed network fallacies and ensure high availability during adaptations.
 
-Dynamic selection (Alarm vs. SMS).  
-G7	Get Vital Params	ms-sensor-gateway	
+## How the Distributed MAPE-K Loop Works
 
-High-throughput data ingestion.  
-G8	Analyze Data	ms-analytics-engine	
+Instead of stopping and starting local JAR files, adaptation happens dynamically on the network layer through a decentralized MAPE-K control loop:
 
-Local vs. Remote processing selection.
+1. **Monitor:** Core services and sensors observe the environment and inject context states (e.g., internet availability, patient vitals) into cross-service requests using `X-Context-*` HTTP headers.
+2. **Analyze:** The **Spring Cloud Gateway** (acting as the GoalD Manager) intercepts these requests and analyzes the active contexts to identify if the currently requested goal (e.g., *Notify Emergency*) is at risk of failing, or if newly available contexts offer an opportunity to improve the system.
+3. **Plan:** The Gateway evaluates the internal **Deployment Variability Model (DVM)**. It filters out any implementation strategies that are unachievable under the current context. For the remaining valid alternatives, it calculates their expected Quality of Service (QoS) and *plans* the adaptation by selecting the service route that yields the highest score.
+4. **Execute:** The Gateway translates the plan into action by dynamically rewriting its `RouteLocator` to forward the network request to the winning microservice strategy (e.g., seamlessly rerouting traffic from `ms-send-sms` to `ms-alarm-service` without restarting any containers).
+5. **Knowledge:** **Netflix Eureka** serves as the dynamic knowledge base and service registry, maintaining the real-time truth of which implementation agents (Docker containers) are currently online, healthy, and available to receive traffic.
 
-#### Distributed Sequence: Autonomous Adaptation (G4)
+## Project Structure
 
-This diagram illustrates the means-end refinement process over the network, where the system proactively switches strategies based on the C1: Internet Connection context.
+The project follows a strict separation of goal definitions (contracts) from implementation agents, structured as a Maven multi-module project:
 
-    participant O as TAS Orchestrator
-    participant G as Spring Cloud Gateway (Planner)
-    participant A as Alarm-Service (Strategy P3)
-    participant S as SMS-Service (Strategy P2)
-
-    Note over O, S: Context C1 is True (Internet Available)
-    O->>G: POST /notify (Header: X-Context-C1: true)
-    G->>A: Route to High-Quality Service
-    A-->>G: 200 OK
-    G-->>O: Success (Quality: 25)
-
-    Note over O, S: Context Change Detected (!C1)
-    O->>G: POST /notify (Header: X-Context-C1: false)
-    G->>S: Route to Fallback Strategy
-    S-->>G: 200 OK
-    G-->>O: Success (Quality: 13)
-
-### 3. Technology Stack & Prerequisites
-
-    Core: Java 17+, Spring Boot 3.0.4+.  
-
-    Reactive: Spring WebFlux, Project Reactor.  
-
-    Connectivity: Spring Cloud Gateway, Netflix Eureka.  
-
-    Persistence: Spring Data (MongoDB for non-blocking stores, MySQL for legacy state).  
-
-    Observability: Micrometer Tracing, Zipkin, Prometheus.  
-
-    Containerization: Docker, Docker Compose (for automated E2E system verification).
-
-### 4. Implementation Guidelines
-#### Separating Definitions from Agents
-
-In accordance with GoalD principles, we maintain strict isolation between Goal Definitions (Shared Interface Models) and Implementation Agents (The actual microservices).
-1. API Project: Contains Data Transfer Objects (DTOs) and Service Interfaces (e.g., ProductService.java).
-2. Implementation Project: Contains the @RestController and business logic that realizes the goal.
-
-#### Resilient Reactive Operators
-All cross-service calls must utilize standard resilience patterns:
-- flatMap: For transforming context-dependent responses.  
-- onErrorResume: For providing GORE-based fallbacks when a service is unreachable. 
-- switchIfEmpty: For handling missing data without breaking the stream.
-
-5. Deployment & Testing
-Automated System Verification
-
-We utilize a unified verification script to ensure the Deployment Variability Model (DVM) is functioning correctly across the network.
+```text
+tas-parent/
+├── api-definitions/   # Shared Interfaces and DTOs (The "Goal Definitions")
+├── ms-registry/       # Netflix Eureka Server (The Knowledge Base)
+├── ms-gateway/        # Spring Cloud Gateway (The Context-Aware Planner)
+├── ms-monitor/        # TAS Core: Monitors patient vitals
+├── ms-intelligence/   # TAS Core: Analyzes data locally or remotely
+├── ms-treatment/      # TAS Core: Enacts medical treatments
+└── ms-emergency/      # Implementation Agents: Alarm Service vs. SMS Service
