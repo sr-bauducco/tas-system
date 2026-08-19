@@ -1,30 +1,41 @@
 package gateway.planner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import java.util.*;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class GoalKnowledgeBase {
 
-    public record Strategy(String serviceUri, List<String> requiredContexts, int qosScore) {}
-
-    private final Map<String, List<Strategy>> dvm = new HashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(GoalKnowledgeBase.class);
+    
+    // Thread-safe distributed context storage to prevent blocking during concurrent I/O
+    private final ConcurrentHashMap<String, Boolean> activeContexts = new ConcurrentHashMap<>();
 
     public GoalKnowledgeBase() {
-        // UPDATED: Mapped to G10 instead of G4
-        dvm.put("G10_NotifyEmergency", List.of(
-            new Strategy("lb://ms-emergency/emergency/alarm", List.of("C1_InternetConnection"), 25),
-            new Strategy("lb://ms-emergency/emergency/sms", List.of(), 13) // Fallback
-        ));
+        // Initialize the baseline Contextual Goal Model environments (Ideal State)
+        activeContexts.put("C1_InternetConnection", true);
+        activeContexts.put("C3_DoctorPresent", true);
+        activeContexts.put("C4_DrugAvailable", true);
+        activeContexts.put("C7_InvasiveAllowed", true);
         
-        // G8: Analyze Data (For future implementation)
-        dvm.put("G8_AnalyzeData", List.of(
-            new Strategy("lb://ms-intelligence/analyze/remote", List.of("C1_InternetConnection"), 30),
-            new Strategy("lb://ms-intelligence/analyze/local", List.of(), 10)
-        ));
+        log.info("[GoalD Knowledge Base] Initialized baseline environment.");
     }
 
-    public List<Strategy> getStrategiesForGoal(String goalId) {
-        return dvm.getOrDefault(goalId, Collections.emptyList());
+    /**
+     * Called asynchronously by the ms-monitor layer to update the state of the world.
+     */
+    public void updateContext(String contextId, boolean state) {
+        activeContexts.put(contextId, state);
+        log.warn("[MAPE-K Monitor] Context Shift: {} is now {}", contextId, state ? "ACTIVE" : "INACTIVE");
+    }
+
+    /**
+     * Called by the GoalDAdaptationFilter (Analyze Phase) to evaluate routing viability.
+     */
+    public boolean isContextActive(String contextId) {
+        return activeContexts.getOrDefault(contextId, false);
     }
 }
