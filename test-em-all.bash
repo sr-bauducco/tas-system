@@ -1,116 +1,66 @@
 #!/usr/bin/env bash
+# test-em-all.bash - GoalD Distributed GQM Evaluation Suite
 set -e
 
-HOST=localhost
-PORT=8080
+GATEWAY_URL="http://localhost:8080/api/v1/health-support"
+ITERATIONS=100
 
-# --- Helper Functions ---
+echo "========================================================="
+echo " GoalD Distributed Microservices Evaluation"
+echo "========================================================="
 
-function assertEqual() {
-  local expected=$1
-  local actual=$2
-  if [ "$actual" != "$expected" ]; then
-    echo "ASSERTION FAILED: Expected '$expected' but got '$actual'"
-    exit 1
-  fi
+function run_load_test() {
+    local profile=$1
+    local success=0
+    local failed=0
+
+    echo ">> Executing Profile: $profile"
+    for i in $(seq 1 $ITERATIONS); do
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$GATEWAY_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Adaptation-Profile: $profile" \
+            -H "X-Context-C1: true" \
+            -H "X-Context-C5: false" \
+            -d '{"patientId": 101, "vitalSigns": {"heartRate": 150}}')
+
+        if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            ((success++))
+        else
+            ((failed++))
+        fi
+    done
+
+    # Calculate Failure Rate (Pf)
+    PF=$(echo "scale=2; ($failed / $ITERATIONS) * 100" | bc)
+    echo "   Success: $success | Failed: $failed | Failure Rate (Pf): $PF%"
 }
 
-function testUrl() {
-  url=$@
-  if curl $url -ks -f -o /dev/null
-  then
-    return 0
-  else
-    return 1
-  fi;
-}
+echo -e "\n[PHASE 1] Nominal Execution (All Containers Healthy)"
+run_load_test "NO_ADAPTATION"
 
-function waitForService() {
-  url=$@
-  echo -n "Wait for: $url... "
-  n=0
-  until testUrl $url
-  do
-    n=$((n + 1))
-    if [[ $n == 100 ]]
-    then
-      echo " Give up"
-      exit 1
-    else
-      sleep 3
-      echo -n ", retry #$n "
-    fi
-  done
-  echo "DONE, continues..."
-}
+echo -e "\n[PHASE 2] Inducing Network Fault (Stopping ms-treatment)"
+docker stop $(docker ps -q -f name=ms-treatment) || echo "Warning: ms-treatment container not found."
 
-# --- Initialization ---
+echo -e "\n[PHASE 3] Re-evaluating Failure Rates (Pf) under Fault Conditions"
+run_load_test "NO_ADAPTATION"
+run_load_test "RETRY"
+run_load_test "SELECT_RELIABLE"
 
-if [[ $@ == *"start"* ]]
-then
-  echo "Restarting the test environment..."
-  echo "$ docker-compose down --remove-orphans"
-  docker-compose down --remove-orphans
-  echo "$ docker-compose up -d"
-  docker-compose up -d
+echo -e "\n[PHASE 4] MTTR Benchmark (Mean Time To Repair)"
+START_TIME=$(date +%s%3N)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$GATEWAY_URL" \
+    -H "Content-Type: application/json" \
+    -H "X-Adaptation-Profile: SELECT_RELIABLE" \
+    -d '{"patientId": 101}')
+END_TIME=$(date +%s%3N)
+
+if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+    ELAPSED=$((END_TIME - START_TIME))
+    echo ">> Reactive Fallback MTTR: ${ELAPSED} ms"
+else
+    echo ">> Reactive Fallback FAILED"
 fi
 
-# Wait for the API Gateway to be responsive[cite: 3]
-waitForService http://$HOST:$PORT/actuator/health
-
-# Allow additional time for Eureka Service Registry propagation
-echo "Waiting for Eureka instance registrations to propagate..."
-sleep 30
-
-echo "========================================================"
-echo "TEST 1: Dynamic Adaptation - G8 Analyze Data (Ideal Context)"
-echo "========================================================"
-# GoalD Context: C1_InternetConnection is TRUE by default
-RESPONSE=$(curl -s -X POST http://$HOST:$PORT/ \
-  -H "Content-Type: application/json" \
-  -H "X-Target-Goal: G8_AnalyzeData" \
-  -d '{"patientId": "pt-101", "heartRate": 115}')
-
-# The Gateway should route to the High-QoS Strategy P6 (Remote)
-ACTUAL_MESSAGE=$(echo $RESPONSE | jq -r .message)
-assertEqual "CRITICAL: Tachycardia Detected (via P6)" "$ACTUAL_MESSAGE"
-echo "SUCCESS: Gateway autonomously routed G8 to Remote Strategy (P6)."
-
-echo "========================================================"
-echo "TEST 2: Context Shift & Adaptation Fallback"
-echo "========================================================"
-# Simulate a physical sensor detecting a network outage
-curl -s -X POST "http://$HOST:$PORT/api/context/C1_InternetConnection?state=false"
-
-# Re-issue the exact same Goal execution request
-RESPONSE=$(curl -s -X POST http://$HOST:$PORT/ \
-  -H "Content-Type: application/json" \
-  -H "X-Target-Goal: G8_AnalyzeData" \
-  -d '{"patientId": "pt-101", "heartRate": 115}')
-
-# The Gateway must intercept the lack of C1 and route to Fallback Strategy P5 (Local)
-ACTUAL_MESSAGE=$(echo $RESPONSE | jq -r .message)
-assertEqual "CRITICAL: Tachycardia Detected (via P5)" "$ACTUAL_MESSAGE"
-echo "SUCCESS: Gateway autonomously adapted G8 to Local Fallback Strategy (P5)."
-
-echo "========================================================"
-echo "TEST 3: Distributed Orchestrator & Circuit Breaker (G1)"
-echo "========================================================"
-# Trigger the AND-Refinement Orchestrator in ms-monitor
-# Since C1_InternetConnection is still FALSE, G10 must fallback to SMS instead of Alarm
-RESPONSE=$(curl -s -X POST http://$HOST:$PORT/monitor/g1/execute/pt-101)
-
-STATUS=$(echo $RESPONSE | jq -r .status)
-assertEqual "SUCCESS" "$STATUS"
-echo "SUCCESS: Orchestrator successfully combined G3 and G4 dynamically across the network."
-
-# --- Teardown ---
-
-if [[ $@ == *"stop"* ]]
-then
-  echo "We are done, stopping the test environment..."
-  echo "$ docker-compose down"
-  docker-compose down
-fi
-
-echo "End, all tests OK: $(date)"
+echo "========================================================="
+echo " Restarting environment..."
+docker start $(docker ps -a -q -f name=ms-treatment)

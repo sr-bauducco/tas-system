@@ -1,41 +1,52 @@
 package gateway.planner;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class GoalKnowledgeBase {
 
-    private static final Logger log = LoggerFactory.getLogger(GoalKnowledgeBase.class);
-    
-    // Thread-safe distributed context storage to prevent blocking during concurrent I/O
-    private final ConcurrentHashMap<String, Boolean> activeContexts = new ConcurrentHashMap<>();
+    // Simulates the Context-VE Map from the GoalD architecture
+    private final Map<String, Boolean> nodeAvailability = new ConcurrentHashMap<>();
 
     public GoalKnowledgeBase() {
-        // Initialize the baseline Contextual Goal Model environments (Ideal State)
-        activeContexts.put("C1_InternetConnection", true);
-        activeContexts.put("C3_DoctorPresent", true);
-        activeContexts.put("C4_DrugAvailable", true);
-        activeContexts.put("C7_InvasiveAllowed", true);
-        
-        log.info("[GoalD Knowledge Base] Initialized baseline environment.");
+        // Initialize default distributed components as available
+        nodeAvailability.put("ms-treatment", true);
+        nodeAvailability.put("ms-emergency", true);
+        nodeAvailability.put("ms-monitor", true);
+        nodeAvailability.put("ms-intelligence", true);
     }
 
     /**
-     * Called asynchronously by the ms-monitor layer to update the state of the world.
+     * Updates the Knowledge Base when a node drops off the network or fails a health check.
+     * This directly maps to updating the Context-VE Map in GoalD.
+     *
+     * @param nodeId The hostname of the failed microservice.
      */
-    public void updateContext(String contextId, boolean state) {
-        activeContexts.put(contextId, state);
-        log.warn("[MAPE-K Monitor] Context Shift: {} is now {}", contextId, state ? "ACTIVE" : "INACTIVE");
+    public void markNodeUnavailable(String nodeId) {
+        if (nodeId != null) {
+            // Thread-safe mutation of the operational context
+            nodeAvailability.put(nodeId, false);
+            System.out.println("[MAPE-K: ANALYZE] Node marked unavailable in KnowledgeBase: " + nodeId);
+        }
     }
 
     /**
-     * Called by the GoalDAdaptationFilter (Analyze Phase) to evaluate routing viability.
+     * Checks the DVM state to see if a specific component is currently viable.
      */
-    public boolean isContextActive(String contextId) {
-        return activeContexts.getOrDefault(contextId, false);
+    public boolean isNodeAvailable(String nodeId) {
+        return nodeAvailability.getOrDefault(nodeId, false);
+    }
+
+    /**
+     * Restores a node's availability in the DVM, typically called by a health-check polling mechanism
+     * or Eureka registry heartbeat sync.
+     */
+    public void restoreNode(String nodeId) {
+        if (nodeId != null) {
+            nodeAvailability.put(nodeId, true);
+            System.out.println("[MAPE-K: ANALYZE] Node restored in KnowledgeBase: " + nodeId);
+        }
     }
 }

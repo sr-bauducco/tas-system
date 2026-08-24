@@ -1,91 +1,63 @@
 package gateway.filter;
 
-import gateway.planner.GoalKnowledgeBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import gateway.planner.GoalPlannerService;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.Ordered;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
+import reactor.util.retry.Retry;
+import java.time.Duration;
 import java.net.URI;
 
-@Component
-public class GoalDAdaptationFilter implements GlobalFilter, Ordered {
+public class GoalDAdaptationFilter implements GatewayFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(GoalDAdaptationFilter.class);
-    
-    // 1. Explicitly declare the Knowledge Base dependency
-    private final GoalKnowledgeBase knowledgeBase;
+    private final GoalPlannerService plannerService;
 
-    // 2. Inject it via the constructor (Spring IoC)
-    public GoalDAdaptationFilter(GoalKnowledgeBase knowledgeBase) {
-        this.knowledgeBase = knowledgeBase;
+    public GoalDAdaptationFilter(GoalPlannerService plannerService) {
+        this.plannerService = plannerService;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
-        String targetGoal = request.getHeaders().getFirst("X-Target-Goal");
+        // 1. Extract Profile and Primary Goal Context
+        String profile = exchange.getRequest().getHeaders().getFirst("X-Adaptation-Profile");
+        if (profile == null) profile = "NO_ADAPTATION";
 
-        if (targetGoal == null || targetGoal.isEmpty()) {
-            return chain.filter(exchange);
+        // 2. Resolve Primary Route via DVM KnowledgeBase
+        URI primaryRoute = plannerService.resolvePrimaryVE(exchange.getRequest());
+        ServerWebExchange primaryExchange = mutateExchangeUri(exchange, primaryRoute);
+
+        // 3. Apply Reactive Adaptation Strategy
+        switch (profile.toUpperCase()) {
+            case "RETRY":
+                // TAS Exemplar: Retry twice before failing
+                return chain.filter(primaryExchange)
+                        .retryWhen(Retry.fixedDelay(2, Duration.ofMillis(200)));
+
+            case "SELECT_RELIABLE":
+                // TAS Exemplar: Select equivalent reliable service on failure
+                return chain.filter(primaryExchange)
+                        .onErrorResume(throwable -> {
+                            // Trigger Analyze/Plan phase of MAPE-K loop
+                            URI fallbackRoute = plannerService.resolveFallbackVE(exchange.getRequest(), primaryRoute);
+                            if (fallbackRoute == null) {
+                                return Mono.error(new RuntimeException("No reliable fallback available"));
+                            }
+                            ServerWebExchange fallbackExchange = mutateExchangeUri(exchange, fallbackRoute);
+                            return chain.filter(fallbackExchange);
+                        });
+
+            case "NO_ADAPTATION":
+            default:
+                // Direct execution with zero fault tolerance
+                return chain.filter(primaryExchange);
         }
-
-        log.info("[MAPE-K] Intercepted routing request for Goal: {}", targetGoal);
-        
-        // MAPE-K: Analyze Phase
-        boolean hasInternet = knowledgeBase.isContextActive("C1_InternetConnection");
-        boolean hasDoctor = knowledgeBase.isContextActive("C3_DoctorPresent");
-        
-        // MAPE-K: Plan Phase - Map goal to Eureka Load-Balanced (lb://) URL
-        URI routedUri = resolveStrategy(targetGoal, hasInternet, hasDoctor, request.getURI());
-        
-        if (routedUri != null) {
-            ServerHttpRequest mutatedRequest = request.mutate().uri(routedUri).build();
-            log.info("[MAPE-K Plan] Routed Goal {} -> Strategy {}", targetGoal, routedUri);
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
-        }
-
-        // Safe fallback if strategy is unresolvable
-        return chain.filter(exchange);
     }
 
-    private URI resolveStrategy(String goal, boolean hasInternet, boolean hasDoctor, URI originalUri) {
-        // Evaluate the context for the Invasive sensor strategy
-        boolean invasiveAllowed = knowledgeBase.isContextActive("C7_InvasiveAllowed");
-
-        // We use 'lb://' so Spring Cloud LoadBalancer resolves the physical IP from Eureka[cite: 3]
-        return switch (goal) {
-            case "G7_GetVitalParams" -> invasiveAllowed
-                ? URI.create("lb://ms-monitor/monitor/g7/invasive") 
-                : URI.create("lb://ms-monitor/monitor/g7/noninvasive");
-
-            case "G8_AnalyzeData" -> hasInternet 
-                ? URI.create("lb://ms-intelligence/intelligence/g8/remote") 
-                : URI.create("lb://ms-intelligence/intelligence/g8/local");
-                
-            case "G4_NotifyEmergency" -> hasInternet 
-                ? URI.create("lb://ms-emergency/emergency/g4/alarm") 
-                : URI.create("lb://ms-emergency/emergency/g4/sms");
-
-            case "G10_NotifyEmergency" -> hasInternet 
-                ? URI.create("lb://ms-emergency/emergency/g10/alarm") 
-                : URI.create("lb://ms-emergency/emergency/g10/sms");
-                
-            case "G11_ChangeDrug" -> hasDoctor 
-                ? URI.create("lb://ms-treatment/treatment/g11/execute") 
-                : null; // Null aborts routing if context condition fails
-                
-            default -> originalUri;
-        };
-    }
-
-    @Override
-    public int getOrder() { 
-        return -100; // Ensure this runs early to rewrite the URI before standard routing
+    private ServerWebExchange mutateExchangeUri(ServerWebExchange exchange, URI targetUri) {
+        return exchange.mutate()
+                .request(r -> r.uri(targetUri))
+                .build();
     }
 }

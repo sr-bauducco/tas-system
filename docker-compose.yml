@@ -1,0 +1,75 @@
+version: '3.8'
+
+networks:
+  goald-mesh:
+    driver: bridge
+
+services:
+  ms-registry:
+    build: ./ms-registry
+    container_name: ms-registry
+    ports:
+      - "8761:8761"
+    networks:
+      - goald-mesh
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      retries: 5
+
+  ms-gateway:
+    build: ./ms-gateway
+    container_name: ms-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
+    depends_on:
+      ms-registry:
+        condition: service_healthy
+    networks:
+      - goald-mesh
+
+  ms-treatment:
+    build: ./ms-treatment
+    container_name: ms-treatment
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
+    depends_on:
+      ms-registry:
+        condition: service_healthy
+    networks:
+      - goald-mesh
+
+  ms-emergency:
+    build: ./ms-emergency
+    container_name: ms-emergency
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
+    depends_on:
+      ms-registry:
+        condition: service_healthy
+    networks:
+      - goald-mesh
+
+  ms-monitor:
+    build: ./ms-monitor
+    container_name: ms-monitor
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
+    depends_on:
+      ms-registry:
+        condition: service_healthy
+    networks:
+      - goald-mesh
+
+  ms-intelligence:
+    build: ./ms-intelligence
+    container_name: ms-intelligence
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
+    depends_on:
+      ms-registry:
+        condition: service_healthy
+    networks:
+      - goald-mesh
