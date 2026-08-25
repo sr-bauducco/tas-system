@@ -3,12 +3,14 @@ package gateway.filter;
 import gateway.planner.GoalPlannerService;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.http.HttpStatus;
+import org.springframework.cloud.gateway.route.Route;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import java.time.Duration;
+
 import java.net.URI;
+import java.time.Duration;
 
 public class GoalDAdaptationFilter implements GatewayFilter {
 
@@ -20,44 +22,53 @@ public class GoalDAdaptationFilter implements GatewayFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // 1. Extract Profile and Primary Goal Context
         String profile = exchange.getRequest().getHeaders().getFirst("X-Adaptation-Profile");
-        if (profile == null) profile = "NO_ADAPTATION";
+        if (profile == null) {
+            profile = "NO_ADAPTATION";
+        }
 
-        // 2. Resolve Primary Route via DVM KnowledgeBase
+        // 1. Resolve Primary Route
         URI primaryRoute = plannerService.resolvePrimaryVE(exchange.getRequest());
-        ServerWebExchange primaryExchange = mutateExchangeUri(exchange, primaryRoute);
+        mutateExchangeRoute(exchange, primaryRoute);
 
-        // 3. Apply Reactive Adaptation Strategy
+        // 2. Apply Reactive Strategy
         switch (profile.toUpperCase()) {
             case "RETRY":
-                // TAS Exemplar: Retry twice before failing
-                return chain.filter(primaryExchange)
+                return chain.filter(exchange)
                         .retryWhen(Retry.fixedDelay(2, Duration.ofMillis(200)));
 
             case "SELECT_RELIABLE":
-                // TAS Exemplar: Select equivalent reliable service on failure
-                return chain.filter(primaryExchange)
+                return chain.filter(exchange)
                         .onErrorResume(throwable -> {
-                            // Trigger Analyze/Plan phase of MAPE-K loop
                             URI fallbackRoute = plannerService.resolveFallbackVE(exchange.getRequest(), primaryRoute);
                             if (fallbackRoute == null) {
-                                return Mono.error(new RuntimeException("No reliable fallback available"));
+                                return Mono.error(new RuntimeException("No fallback available"));
                             }
-                            ServerWebExchange fallbackExchange = mutateExchangeUri(exchange, fallbackRoute);
-                            return chain.filter(fallbackExchange);
+                            mutateExchangeRoute(exchange, fallbackRoute);
+                            return chain.filter(exchange);
                         });
 
             case "NO_ADAPTATION":
             default:
-                // Direct execution with zero fault tolerance
-                return chain.filter(primaryExchange);
+                return chain.filter(exchange);
         }
     }
 
-    private ServerWebExchange mutateExchangeUri(ServerWebExchange exchange, URI targetUri) {
-        return exchange.mutate()
-                .request(r -> r.uri(targetUri))
-                .build();
+    /**
+     * Rebuilds the Spring Cloud Gateway Route object dynamically.
+     * This ensures RouteToRequestUrlFilter builds the physical HTTP URL correctly.
+     */
+    private void mutateExchangeRoute(ServerWebExchange exchange, URI targetUri) {
+        Route originalRoute = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+        if (originalRoute != null) {
+            Route newRoute = Route.async()
+                    .id(originalRoute.getId())
+                    .uri(targetUri)
+                    .order(originalRoute.getOrder())
+                    .asyncPredicate(originalRoute.getPredicate())
+                    .filters(originalRoute.getFilters())
+                    .build();
+            exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR, newRoute);
+        }
     }
 }

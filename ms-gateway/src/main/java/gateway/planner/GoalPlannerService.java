@@ -17,37 +17,30 @@ public class GoalPlannerService {
      * Executes Algorithm 1 (Initial DVM Synthesis) to find the primary route.
      */
     public URI resolvePrimaryVE(ServerHttpRequest request) {
-        // 1. Extract context constraints from headers
         boolean hasInternet = parseContext(request, "X-Context-C1");
-        
-        // 2. Identify the requested goal based on the URI path
         String path = request.getURI().getPath();
         
-        // 3. Map to the appropriate distributed microservice via Eureka (lb://)
+        // Use standard HTTP schemes to force physical network routing via Docker DNS
         if (path.contains("/treatment")) {
-            return URI.create("lb://ms-treatment");
+            return URI.create("http://ms-treatment:8080");
         } else if (path.contains("/emergency")) {
-            return URI.create("lb://ms-emergency");
+            return URI.create("http://ms-emergency:8080");
         }
         
-        // Default to monitoring
-        return URI.create("lb://ms-monitor");
+        return URI.create("http://ms-monitor:8080");
     }
 
     /**
      * Executes Algorithm 2 (Local DVM Re-planning) upon encountering a network fault.
      */
     public URI resolveFallbackVE(ServerHttpRequest request, URI failedUri) {
-        // 1. Register the failure in the KnowledgeBase to invalidate the current VE
         knowledgeBase.markNodeUnavailable(failedUri.getHost());
 
-        // 2. Traverse the DVM for the next highest QoS alternative.
-        // For example, if ms-treatment fails, fallback to ms-emergency (Alarm Service).
+        // Traverse the DVM for the next highest QoS alternative.
         if (failedUri.toString().contains("ms-treatment")) {
-            return URI.create("lb://ms-emergency");
+            return URI.create("http://ms-emergency:8080");
         } else if (failedUri.toString().contains("ms-intelligence")) {
-            // If remote analysis fails, fallback to local analysis inside ms-monitor
-            return URI.create("lb://ms-monitor");
+            return URI.create("http://ms-monitor:8080");
         }
 
         throw new IllegalStateException("No viable fallback Variability Element found for " + failedUri);
