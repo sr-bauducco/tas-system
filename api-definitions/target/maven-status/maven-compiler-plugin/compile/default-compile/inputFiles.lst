@@ -1,3 +1,4 @@
+/home/srbauducco/tas-system/api-definitions/src/main/java/api/TelemetryLogger.java
 /home/srbauducco/tas-system/api-definitions/src/main/java/goals/request/DoseRequest.java
 /home/srbauducco/tas-system/api-definitions/src/main/java/goals/definition/G10NotifyEmergency.java
 /home/srbauducco/tas-system/api-definitions/src/main/java/goals/context/DoseContext.java

@@ -3,6 +3,7 @@ goals/definition/G12ChangeDose.class
 goals/request/VitalSign.class
 goals/definition/G5MonitorPatient.class
 api/FulfillmentStatus.class
+api/TelemetryLogger.class
 goals/context/DrugContext.class
 goals/definition/G9AdministerMedicine.class
 goals/request/EmergencyRequest.class

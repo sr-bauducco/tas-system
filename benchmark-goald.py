@@ -14,11 +14,12 @@ CONTEXTS = [
 
 def wait_for_gateway():
     print("[INIT] Aguardando o MAPE-K Edge Gateway (Porta 8080)...")
-    for attempt in range(30):
+    for attempt in range(40):
         try:
-            requests.get(GATEWAY_URL, timeout=1.0)
+            # Aumentado o timeout para 5 segundos e aceitando qualquer resposta HTTP (mesmo 404/500, que provam que o container está ativo)
+            requests.get(GATEWAY_URL, timeout=5.0)
             return
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
             time.sleep(2)
     print("\n[FATAL] Gateway falhou. Verifique os logs.")
     sys.exit(1)
