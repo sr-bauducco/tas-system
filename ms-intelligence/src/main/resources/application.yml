@@ -33,11 +33,11 @@ spring:
           predicates:
             - Path=/emergency/g10/**
             - Header=X-Context-Internet, true
+
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
-
+      defaultZone: http://ms-registry:8761/eureka/
 
 management:
   endpoints:

@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8085
 
 spring:
   application:
@@ -30,3 +30,8 @@ logging:
   level:
     agent: DEBUG
     org.springframework.web: INFO
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://ms-registry:8761/eureka/
