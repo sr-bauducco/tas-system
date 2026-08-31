@@ -9,3 +9,9 @@ eureka:
     fetchRegistry: false      # I am the server, do not fetch from myself
     serviceUrl:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info

@@ -17,10 +17,10 @@ labels = [
 
 # Intervalos temporais mapeados para simular a variação de 20 horas
 intervals = {
-    "battery-is-low": [(0, 2), (16, 20)],
+    "battery-is-low": [(0, 3.5), ( 16.2, 20)],
     "patient-is-ok": [(0, 6.3), (16.2, 17.8)],
     "internet-connection": [(0, 3.5), (4.1, 15.2)],
-    "doctor-is-present": [(7.2, 12.8)],
+    "doctor-is-present": [(7.2, 13)],
     "drug-is-available": [(8.8, 19.0)],
     "PushButton (P1)": [(0, 20)],
     "ProvideSelfDiagnosed (G1)": [(0, 20)],
@@ -34,7 +34,7 @@ intervals = {
     "EnactTreatment (P5)": [(3.5, 4.1), (15.2, 17.3)],
     "EnactTreatment (G6)": [(6.3, 16.2)],
     "AdministerMedicine (G9)": [(6.3, 16.2)],
-    "ChangeDrug (P7)": [(7.2, 12.8)],
+    "ChangeDrug (P7)": [(7.2, 13)],
     "ChangeDose (P8)": [(8.8, 16.2)],
     "system_available": [(0, 20)]
 }

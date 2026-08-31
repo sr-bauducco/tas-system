@@ -9,10 +9,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info"
-  endpoint:
-    health:
-      show-details: always
+        include: prometheus, health, info
 
 info:
   app:
@@ -23,3 +20,4 @@ logging:
   level:
     agent: DEBUG
     org.springframework.web: INFO
+
