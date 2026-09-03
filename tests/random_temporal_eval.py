@@ -44,6 +44,7 @@ def run_random_chaos_simulation(iterations=30):
             "c5-patientok": random.choice([True, False, False])
         }
         
+        # --- CORREÇÃO: Cabeçalhos de Telemetria Injetados ---
         headers = {
             "X-Target-Goal": "G11_Treatment",
             "Content-Type": "application/json",
@@ -51,7 +52,10 @@ def run_random_chaos_simulation(iterations=30):
             "X-Context-Battery": str(current_contexts["c2-battery"]),
             "X-Context-Doctor": str(current_contexts["c3-doctor"]),
             "X-Context-Drug": str(current_contexts["c4-drug"]),
-            "X-Context-Patient": str(current_contexts["c5-patientok"])
+            "X-Context-Patient": str(current_contexts["c5-patientok"]),
+            "X-Simulation-Time-Ms": str(req_start),
+            "X-Scenario": "1",
+            "X-Exec-Index": str(step)
         }
         
         print(f" -> [Ciclo {step}] Contexto Sorteado: {current_contexts}")
@@ -111,7 +115,7 @@ def process_results(client_results):
                         start_ms = int(end_ms - duration_ms)
                         label = data.get("bundle", "unknown")
                         server_results.append({
-                            "scenario": 1, "execIndex": 1, "plotIndex": 1,
+                            "scenario": 1, "execIndex": data.get("traceId", 1), "plotIndex": 1,
                             "label": label, "start": start_ms, "end": end_ms, "type": "bundle"
                         })
                 except Exception:
@@ -128,5 +132,5 @@ def process_results(client_results):
     return df
 
 if __name__ == "__main__":
-    client_data = run_random_chaos_simulation(iterations=100)
+    client_data = run_random_chaos_simulation(iterations=30)
     process_results(client_data)

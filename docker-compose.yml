@@ -10,6 +10,8 @@ services:
     container_name: ms-registry
     ports:
       - "8761:8761"
+    volumes:
+      - ./:/telemetry
     networks:
       - goald-mesh
     healthcheck:
@@ -22,6 +24,8 @@ services:
     container_name: ms-gateway
     ports:
       - "8080:8080"
+    volumes:
+      - ./:/telemetry
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
     depends_on:
@@ -35,6 +39,8 @@ services:
     container_name: ms-treatment
     ports:
       - "8081:8080" # <-- Adicionado
+    volumes:
+      - ./:/telemetry
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
     depends_on:
@@ -48,6 +54,8 @@ services:
     container_name: ms-emergency
     ports:
       - "8082:8080" # <-- Adicionado
+    volumes:
+      - ./:/telemetry
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
     depends_on:
@@ -61,6 +69,8 @@ services:
     container_name: ms-monitor
     ports:
       - "8083:8080" # <-- Adicionado
+    volumes:
+      - ./:/telemetry
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
     depends_on:
@@ -72,6 +82,8 @@ services:
   ms-intelligence:
     build: ./ms-intelligence
     container_name: ms-intelligence
+    volumes:
+      - ./:/telemetry
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ms-registry:8761/eureka/
     depends_on:

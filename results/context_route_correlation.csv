@@ -1,0 +1,101 @@
+execIndex,route_label,request_type,start_ms,end_ms,active_contexts
+1,client-request,http-500,0,9,"c1-internet, c2-battery, c5-patientok"
+2,client-request,http-500,509,511,!c1-internet
+3,client-request,http-500,1011,1013,"!c2-battery, c4-drug, !c5-patientok"
+4,client-request,http-500,1513,1514,"c1-internet, c3-doctor, c5-patientok"
+5,client-request,http-500,2015,2016,"c2-battery, !c3-doctor, !c4-drug"
+6,client-request,http-500,2516,2517,"!c1-internet, c3-doctor"
+7,client-request,http-500,3017,3019,"!c3-doctor, !c5-patientok"
+8,client-request,http-500,3519,3521,"c4-drug, c5-patientok"
+9,client-request,http-500,4021,4022,"c1-internet, c3-doctor"
+10,client-request,http-500,4522,4526,"!c1-internet, !c4-drug"
+11,client-request,http-500,5026,5028,"!c3-doctor, c4-drug"
+12,client-request,http-500,5528,5530,"c1-internet, !c4-drug, !c5-patientok"
+13,client-request,http-500,6030,6031,"c3-doctor, c5-patientok"
+14,client-request,http-500,6532,6533,"!c2-battery, !c3-doctor, c4-drug"
+15,client-request,http-500,7033,7034,"!c1-internet, !c5-patientok"
+16,client-request,http-500,7534,7535,"c3-doctor, !c4-drug"
+17,client-request,http-500,8035,8036,c2-battery
+18,client-request,http-500,8537,8538,"!c3-doctor, c5-patientok"
+19,client-request,http-500,9038,9039,
+20,client-request,http-500,9539,9540,c4-drug
+21,client-request,http-500,10041,10042,"!c2-battery, c3-doctor, !c4-drug, !c5-patientok"
+22,client-request,http-500,10542,10543,"c1-internet, !c3-doctor, c5-patientok"
+23,client-request,http-500,11043,11045,"!c1-internet, c4-drug"
+24,client-request,http-500,11545,11546,"c1-internet, !c4-drug, !c5-patientok"
+25,client-request,http-500,12046,12047,c2-battery
+26,client-request,http-500,12547,12548,"!c1-internet, !c2-battery, c5-patientok"
+27,client-request,http-500,13048,13050,"c2-battery, !c5-patientok"
+28,client-request,http-500,13550,13551,"c1-internet, !c2-battery, c5-patientok"
+29,client-request,http-500,14052,14053,!c1-internet
+30,client-request,http-500,14553,14554,"c1-internet, c4-drug"
+31,client-request,http-500,15055,15056,"!c1-internet, c2-battery, !c4-drug"
+32,client-request,http-500,15556,15557,
+33,client-request,http-500,16057,16059,
+34,client-request,http-500,16559,16560,"c1-internet, c3-doctor, c4-drug, !c5-patientok"
+35,client-request,http-500,17060,17062,"!c1-internet, !c3-doctor"
+36,client-request,http-500,17562,17563,"!c2-battery, c3-doctor, c5-patientok"
+37,client-request,http-500,18063,18064,"c2-battery, !c3-doctor, !c4-drug"
+38,client-request,http-500,18565,18566,"!c2-battery, c4-drug"
+39,client-request,http-500,19066,19068,!c4-drug
+40,client-request,http-500,19568,19569,
+41,client-request,http-500,20069,20071,c2-battery
+42,client-request,http-500,20571,20572,"!c2-battery, c4-drug"
+43,client-request,http-500,21072,21074,"c1-internet, c2-battery, !c4-drug"
+44,client-request,http-500,21574,21575,"!c1-internet, !c2-battery, c4-drug"
+45,client-request,http-500,22075,22077,!c4-drug
+46,client-request,http-500,22577,22578,c2-battery
+47,client-request,http-500,23078,23080,"c1-internet, !c2-battery, c3-doctor, c4-drug, !c5-patientok"
+48,client-request,http-500,23580,23581,"!c1-internet, c2-battery, !c3-doctor, !c4-drug, c5-patientok"
+49,client-request,http-500,24082,24083,
+50,client-request,http-500,24583,24585,"c1-internet, !c2-battery, !c5-patientok"
+51,client-request,http-500,25085,25086,"c3-doctor, c5-patientok"
+52,client-request,http-500,25586,25588,"!c1-internet, !c5-patientok"
+53,client-request,http-500,26088,26089,"!c3-doctor, c5-patientok"
+54,client-request,http-500,26590,26591,"c2-battery, c4-drug, !c5-patientok"
+55,client-request,http-500,27091,27092,"!c4-drug, c5-patientok"
+56,client-request,http-500,27593,27594,c3-doctor
+57,client-request,http-500,28094,28095,"c1-internet, !c2-battery, !c3-doctor, !c5-patientok"
+58,client-request,http-500,28595,28597,"!c1-internet, c4-drug, c5-patientok"
+59,client-request,http-500,29097,29098,"c3-doctor, !c4-drug"
+60,client-request,http-500,29598,29600,"c2-battery, !c3-doctor, !c5-patientok"
+61,client-request,http-500,30100,30101,"c4-drug, c5-patientok"
+62,client-request,http-500,30601,30602,"!c2-battery, !c4-drug"
+63,client-request,http-500,31103,31104,"c2-battery, c4-drug, !c5-patientok"
+64,client-request,http-500,31604,31606,!c4-drug
+65,client-request,http-500,32106,32107,"c1-internet, !c2-battery, c4-drug, c5-patientok"
+66,client-request,http-500,32607,32609,"!c1-internet, !c4-drug"
+67,client-request,http-500,33109,33110,"c1-internet, c4-drug, !c5-patientok"
+68,client-request,http-500,33610,33611,"!c1-internet, c2-battery, c3-doctor, c5-patientok"
+69,client-request,http-500,34112,34113,!c5-patientok
+70,client-request,http-500,34613,34615,"c1-internet, !c2-battery, !c3-doctor, !c4-drug"
+71,client-request,http-500,35115,35116,"!c1-internet, c2-battery, c5-patientok"
+72,client-request,http-500,35616,35618,!c2-battery
+73,client-request,http-500,36118,36119,c4-drug
+74,client-request,http-500,36619,36621,"c1-internet, c2-battery, c3-doctor"
+75,client-request,http-500,37121,37123,"!c1-internet, !c3-doctor"
+76,client-request,http-500,37623,37624,"c1-internet, !c2-battery, c3-doctor"
+77,client-request,http-500,38124,38126,"!c1-internet, c2-battery, !c3-doctor, !c4-drug"
+78,client-request,http-500,38626,38627,"c4-drug, !c5-patientok"
+79,client-request,http-500,39127,39129,"c3-doctor, c5-patientok"
+80,client-request,http-500,39629,39630,c1-internet
+81,client-request,http-500,40131,40132,"!c2-battery, !c4-drug"
+82,client-request,http-500,40632,40633,"!c1-internet, !c5-patientok"
+83,client-request,http-500,41134,41135,!c3-doctor
+84,client-request,http-500,41636,41637,"c2-battery, c5-patientok"
+85,client-request,http-500,42137,42138,"c1-internet, c3-doctor, c4-drug, !c5-patientok"
+86,client-request,http-500,42638,42640,"!c2-battery, !c4-drug, c5-patientok"
+87,client-request,http-500,43140,43141,"!c1-internet, !c3-doctor"
+88,client-request,http-500,43641,43643,"c2-battery, c4-drug, !c5-patientok"
+89,client-request,http-500,44143,44144,c1-internet
+90,client-request,http-500,44644,44646,!c4-drug
+91,client-request,http-500,45146,45147,"!c2-battery, c4-drug, c5-patientok"
+92,client-request,http-500,45647,45649,"!c1-internet, c2-battery"
+93,client-request,http-500,46149,46150,"c1-internet, !c2-battery, !c4-drug, !c5-patientok"
+94,client-request,http-500,46650,46652,c5-patientok
+95,client-request,http-500,47152,47153,"!c1-internet, c2-battery, c4-drug"
+96,client-request,http-500,47653,47654,"c3-doctor, !c4-drug"
+97,client-request,http-500,48155,48156,"c1-internet, !c3-doctor, c4-drug"
+98,client-request,http-500,48656,48658,"!c2-battery, !c4-drug, !c5-patientok"
+99,client-request,http-500,49158,49159,"c2-battery, c4-drug, c1-internet, !c2-battery, !c3-doctor, !c4-drug, c5-patientok"
+100,client-request,http-500,49660,49661,"!c1-internet, c3-doctor"
