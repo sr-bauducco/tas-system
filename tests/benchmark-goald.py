@@ -5,85 +5,99 @@ import time
 import json
 import pandas as pd
 from datetime import datetime
-import concurrent.futures
+import itertools
 import os
 
 # ==========================================
-# CONFIGURAÇÕES DE DIRETÓRIOS (ROBUSTO)
+# CONFIGURAÇÕES DE DIRETÓRIOS E ROTAS
 # ==========================================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if os.path.basename(SCRIPT_DIR) == "tests":
-    ROOT_DIR = os.path.dirname(SCRIPT_DIR)
-else:
-    ROOT_DIR = SCRIPT_DIR
+ROOT_DIR = os.path.dirname(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) == "tests" else SCRIPT_DIR
 
 TELEMETRY_FILE = os.path.join(ROOT_DIR, "results", "bundle_activations.jsonl")
 OUTPUT_CSV = os.path.join(ROOT_DIR, "results", "msgoald_benchmark_results.csv")
-
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
-# ==========================================
-# CONFIGURAÇÕES DO TESTE
-# ==========================================
-GATEWAY_URL = "http://localhost:8080/treatment/g11/execute" 
-HEADERS = {"X-Target-Goal": "G11_Treatment", "Content-Type": "application/json"}
-
-NUM_REQUESTS = 50
-CONCURRENT_USERS = 10
+GATEWAY_URL = "http://localhost:8080/treatment/g11/execute"
 
 # ==========================================
-# FUNÇÕES DE EXECUÇÃO
+# DEFINIÇÃO DOS CONTEXTOS C1 ATÉ C5
 # ==========================================
+# C1: Internet Connection, C2: Battery Low, C3: Doctor Present, C4: Drug Available, C5: Patient OK
+CONTEXT_KEYS = ["C1_Internet", "C2_BatteryLow", "C3_DoctorPresent", "C4_DrugAvailable", "C5_PatientOK"]
+
 def clear_old_telemetry():
-    """Limpa a telemetria antiga para garantir um teste limpo."""
     if os.path.exists(TELEMETRY_FILE):
         open(TELEMETRY_FILE, 'w').close()
 
-def send_request(exec_index):
-    """Envia uma requisição ao Gateway e mede a latência do lado do cliente."""
-    start_time = int(time.time() * 1000)
+def run_exhaustive_context_tests():
+    clear_old_telemetry()
+    print("[TESTE EXAUSTIVO] Iniciando testes para todas as combinações de C1 a C5 (32 cenários)...")
     
-    try:
-        payload = {"patientId": "P-101"}
-        response = requests.post(GATEWAY_URL, headers=HEADERS, json=payload, timeout=5)
-        status_code = response.status_code
-    except Exception as e:
-        status_code = 500
-        
-    end_time = int(time.time() * 1000)
-    
-    return {
-        "scenario": 1,
-        "execIndex": exec_index + 1,
-        "plotIndex": 0,
-        "label": "client-request",
-        "start": start_time,
-        "end": end_time,
-        "type": f"http-{status_code}"
-    }
-
-def run_stress_test():
-    """Executa as requisições em paralelo."""
-    print(f"Iniciando teste com {NUM_REQUESTS} requisições ({CONCURRENT_USERS} simultâneas)...")
     client_results = []
+    scenario_id = 1
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENT_USERS) as executor:
-        futures = [executor.submit(send_request, i) for i in range(NUM_REQUESTS)]
-        for future in concurrent.futures.as_completed(futures):
-            client_results.append(future.result())
+    # Gera todas as permutações booleanas de C1 a C5 (True/False)
+    for combination in itertools.product([True, False], repeat=5):
+        context_state = dict(zip(CONTEXT_KEYS, combination))
+        
+        # Mapeia para os cabeçalhos esperados pela arquitetura
+        headers = {
+            "X-Target-Goal": "G11_Treatment",
+            "Content-Type": "application/json",
+            "X-Context-Internet": str(context_state["C1_Internet"]),
+            "X-Context-Battery": str(context_state["C2_BatteryLow"]),
+            "X-Context-Doctor": str(context_state["C3_DoctorPresent"]),
+            "X-Context-Drug": str(context_state["C4_DrugAvailable"]),
+            "X-Context-Patient": str(context_state["C5_PatientOK"])
+        }
+        
+        payload = {"patientId": "P-101", "contextState": context_state}
+        
+        start_time = int(time.time() * 1000)
+        status_code = 500
+        try:
+            response = requests.post(GATEWAY_URL, headers=headers, json=payload, timeout=3.0)
+            status_code = response.status_code
+        except Exception:
+            pass
+        end_time = int(time.time() * 1000)
+        
+        # Registra o estado dos contextos como linhas de contexto no padrão GoalD
+        for ctx_name, state in context_state.items():
+            label_name = f"{ctx_name.lower().replace('_', '-')}"
+            if not state:
+                label_name = f"!{label_name}"
+                
+            client_results.append({
+                "scenario": scenario_id,
+                "execIndex": scenario_id,
+                "plotIndex": 0,
+                "label": label_name,
+                "start": start_time,
+                "end": end_time,
+                "type": "context"
+            })
             
+        # Registra a requisição do cliente
+        client_results.append({
+            "scenario": scenario_id,
+            "execIndex": scenario_id,
+            "plotIndex": 0,
+            "label": "client-request",
+            "start": start_time,
+            "end": end_time,
+            "type": f"http-{status_code}"
+        })
+        
+        scenario_id += 1
+        time.sleep(0.02) # Pequeno resfriamento entre cenários
+
     return client_results
 
-# ==========================================
-# PROCESSAMENTO DE DADOS
-# ==========================================
 def process_telemetry(client_results):
-    """Lê o JSONL gerado pelos microserviços e formata para o padrão CSV."""
-    print("Processando dados de telemetria dos microserviços...")
+    print("Processando rastros de telemetria dos microserviços...")
     server_results = []
-    
-    trace_to_index = {}
-    current_exec_index = 1
     
     if os.path.exists(TELEMETRY_FILE):
         with open(TELEMETRY_FILE, 'r') as f:
@@ -92,22 +106,15 @@ def process_telemetry(client_results):
                     continue
                 try:
                     data = json.loads(line)
-                    
                     dt_obj = datetime.fromisoformat(data["timestamp"].replace('Z', '+00:00'))
                     end_ms = int(dt_obj.timestamp() * 1000)
-                    
-                    trace_id = data.get("traceId", "N/A")
-                    if trace_id not in trace_to_index:
-                        trace_to_index[trace_id] = current_exec_index
-                        current_exec_index += 1
-                    numeric_exec_index = trace_to_index[trace_id]
                     
                     if data["type"] == "execution":
                         duration_ms = data.get("durationMs", 0)
                         start_ms = int(end_ms - duration_ms)
                         label = data.get("bundle", "unknown")
-                        plot_index = 1 
-                        type_label = "context"
+                        plot_index = 1
+                        type_label = "bundle"
                     else:
                         start_ms = end_ms
                         label = f"{data.get('source')}-{data.get('eventName')}"
@@ -116,16 +123,16 @@ def process_telemetry(client_results):
                     
                     server_results.append({
                         "scenario": 1,
-                        "execIndex": numeric_exec_index,
-                        "plotIndex": plot_index, 
+                        "execIndex": 1,
+                        "plotIndex": plot_index,
                         "label": label,
                         "start": start_ms,
                         "end": end_ms,
                         "type": type_label
                     })
-                except Exception as e:
-                    print(f"Erro ao analisar linha: {e}")
-    
+                except Exception:
+                    pass
+
     all_data = client_results + server_results
     df = pd.DataFrame(all_data)
     
@@ -135,17 +142,12 @@ def process_telemetry(client_results):
         df['end'] = df['end'] - min_start
         
     df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\nSucesso! Resultados salvos em: {OUTPUT_CSV}")
+    print(f"\n[SUCESSO] Benchmark completo salvo em: {OUTPUT_CSV}")
     return df
 
-# ==========================================
-# EXECUÇÃO PRINCIPAL
-# ==========================================
 if __name__ == "__main__":
-    clear_old_telemetry()
-    client_res = run_stress_test()
-    time.sleep(2) 
+    client_res = run_exhaustive_context_tests()
+    time.sleep(1)
     df_final = process_telemetry(client_res)
-    
-    print("\nAmostra dos resultados gerados:")
-    print(df_final.head().to_string())
+    print("\nAmostra do resultado gerado:")
+    print(df_final.head(10).to_string())
