@@ -1,50 +1,48 @@
 package treatment;
 
 import api.TelemetryLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
+import java.util.UUID;
 
+@Component
 public class BundleTelemetryFilter implements WebFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(BundleTelemetryFilter.class);
+    // Identificador fixo deste microserviço
+    private final String bundleName = "ms-treatment";
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        String path = exchange.getRequest().getPath().value();
+        long startTime = System.nanoTime();
 
-        if (path.startsWith("/actuator") || path.equals("/error")) {
-            return chain.filter(exchange);
+        // Pega o Trace ID do cabeçalho que o gateway injetou
+        String traceId = exchange.getRequest().getHeaders().getFirst("X-Trace-Id");
+        if (traceId == null) {
+            traceId = UUID.randomUUID().toString();
         }
 
-        long start = TelemetryLogger.simulationTime(
-            exchange.getRequest().getHeaders().getFirst("X-Simulation-Time-Ms"));
+        String finalTraceId = traceId;
+        String endpoint = exchange.getRequest().getURI().getPath();
 
-        return chain.filter(exchange)
-            .doFinally(signal -> {
-                String endHeader = exchange.getRequest().getHeaders()
-                    .getFirst("X-Simulation-End-Time-Ms");
+        logger.info("Bundle [{}] ATIVADO. Endpoint: {}", bundleName, endpoint);
 
-                long end = endHeader == null
-                    ? start
-                    : TelemetryLogger.simulationTime(endHeader);
+        // chain.filter(exchange) retorna um Mono (assíncrono).
+        // doFinally garante a execução no encerramento, seja em sucesso ou falha.
+        return chain.filter(exchange).doFinally(signalType -> {
+            long durationNs = System.nanoTime() - startTime;
+            double durationMs = durationNs / 1_000_000.0;
 
-                TelemetryLogger.logBundle(
-                    path,
-                    start,
-                    end,
-                    Map.of(
-                        "scenario", header(exchange, "X-Scenario", "1"),
-                        "execIndex", header(exchange, "X-Exec-Index", "1"),
-                        "plotIndex", header(exchange, "X-Plot-Index", "-1")
-                    )
-                );
-            });
-    }
+            logger.info("Bundle [{}] DESATIVADO. Tempo ativo: {} ms", bundleName, durationMs);
 
-    private static String header(
-            ServerWebExchange exchange, String name, String fallback) {
-        String value = exchange.getRequest().getHeaders().getFirst(name);
-        return value == null ? fallback : value;
+            // Envia os dados para a telemetria em JSONL
+            TelemetryLogger.logExecution(finalTraceId, bundleName, endpoint, durationMs);
+        });
     }
 }

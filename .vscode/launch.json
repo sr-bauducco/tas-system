@@ -1,0 +1,56 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "EmergencyApplication",
+            "request": "launch",
+            "mainClass": "emergency.EmergencyApplication",
+            "projectName": "ms-emergency"
+        },
+        {
+            "type": "java",
+            "name": "GatewayApplication",
+            "request": "launch",
+            "mainClass": "gateway.GatewayApplication",
+            "projectName": "ms-gateway"
+        },
+        {
+            "type": "java",
+            "name": "IntelligenceApplication",
+            "request": "launch",
+            "mainClass": "intelligence.IntelligenceApplication",
+            "projectName": "ms-intelligence"
+        },
+        {
+            "type": "java",
+            "name": "MonitorApplication",
+            "request": "launch",
+            "mainClass": "monitor.MonitorApplication",
+            "projectName": "ms-monitor"
+        },
+        {
+            "type": "java",
+            "name": "RegistryApplication",
+            "request": "launch",
+            "mainClass": "registry.RegistryApplication",
+            "projectName": "ms-registry"
+        },
+        {
+            "type": "java",
+            "name": "TreatmentApplication",
+            "request": "launch",
+            "mainClass": "treatment.TreatmentApplication",
+            "projectName": "ms-treatment"
+        }
+    ]
+}

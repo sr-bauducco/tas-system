@@ -1,50 +1,44 @@
 package api;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.Map;
+import java.time.Instant;
 
-public final class TelemetryLogger {
-    private static final Path RESULTS = Paths.get(
-        System.getenv().getOrDefault("TAS_RESULTS_FILE", "results/msgoald_results.csv"));
+public class TelemetryLogger {
+    // Caminho que será mapeado como volume compartilhado no Docker
+    private static final String FILE_PATH = "results/bundle_activations.jsonl";
+    
+    // Método para registrar o tempo de execução e a troca de contexto (usado pelos filtros)
+    public static synchronized void logExecution(String traceId, String bundleName, String endpoint, double durationMs) {
+        String timestamp = Instant.now().toString();
+        
+        String jsonLine = String.format(
+            "{\"type\": \"execution\", \"timestamp\": \"%s\", \"traceId\": \"%s\", \"bundle\": \"%s\", \"endpoint\": \"%s\", \"durationMs\": %.4f}",
+            timestamp, traceId, bundleName, endpoint, durationMs
+        ).replace(",", "."); // Garante a formatação correta do ponto flutuante
 
-    private TelemetryLogger() {}
-
-    public static long simulationTime(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Missing X-Simulation-Time-Ms header");
-        }
-        return Long.parseLong(value);
+        writeLog(jsonLine);
     }
 
-    public static synchronized void logBundle(
-            String label,
-            long startMs,
-            long endMs,
-            Map<String, String> metadata) {
+    // Método para registrar eventos de disponibilidade e falhas (usado pelo Gateway)
+    public static synchronized void logEvent(String source, String category, String eventName, String status) {
+        String timestamp = Instant.now().toString();
+        
+        String jsonLine = String.format(
+            "{\"type\": \"event\", \"timestamp\": \"%s\", \"source\": \"%s\", \"category\": \"%s\", \"eventName\": \"%s\", \"status\": \"%s\"}",
+            timestamp, source, category, eventName, status
+        );
 
-        try {
-            Path parent = RESULTS.getParent();
-            if (parent != null) Files.createDirectories(parent);
+        writeLog(jsonLine);
+    }
 
-            if (Files.notExists(RESULTS) || Files.size(RESULTS) == 0) {
-                Files.writeString(RESULTS,
-                    "scenario,execIndex,plotIndex,label,start,end,type\n",
-                    StandardOpenOption.CREATE);
-            }
-
-            String row = String.format("%s,%s,%s,%s,%d,%d,bundle%n",
-                metadata.getOrDefault("scenario", "1"),
-                metadata.getOrDefault("execIndex", "1"),
-                metadata.getOrDefault("plotIndex", "-1"),
-                label.replace(",", "_"),
-                startMs,
-                endMs);
-
-            Files.writeString(RESULTS, row, StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND);
+    // Método auxiliar para isolar a lógica de gravação no arquivo
+    private static void writeLog(String jsonLine) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(FILE_PATH, true))) {
+            out.println(jsonLine);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to write bundle telemetry", e);
+            System.err.println("Falha ao gravar telemetria do GoalD: " + e.getMessage());
         }
     }
 }
