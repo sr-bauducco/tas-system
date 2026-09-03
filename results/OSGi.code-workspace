@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "../../OSGi"
+		},
+		{
+			"path": "../../goald"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../tests"
+		}
+	],
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"mvn -q -DskipTests install": true,
+			"sdk": true
+		}
+	}
+}
