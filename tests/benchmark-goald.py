@@ -15,7 +15,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) == "tests" else SCRIPT_DIR
 
 TELEMETRY_FILE = os.path.join(ROOT_DIR, "results", "bundle_activations.jsonl")
-OUTPUT_CSV = os.path.join(ROOT_DIR, "results", "msgoald_benchmark_results.csv")
+OUTPUT_CSV = os.path.join(ROOT_DIR, "results", "msgoald_results.csv")
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 GATEWAY_URL = "http://localhost:8080/treatment/g11/execute"
