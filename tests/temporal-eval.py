@@ -6,9 +6,6 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# ==========================================
-# CONFIGURAÇÕES DO CENÁRIO DO GRÁFICO
-# ==========================================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) == "tests" else SCRIPT_DIR
 
@@ -19,106 +16,89 @@ os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 GATEWAY_URL = "http://localhost:8080/treatment/g11/execute"
 CONTEXT_URL = "http://localhost:8080/api/context"
 
-# Marcos temporais (em horas simuladas) onde ocorrem as mudanças críticas de contexto no gráfico
-# Derivados diretamente de normalize-data.py (ex: quedas de internet, bateria baixa, etc.)
+# Marcos temporais (em horas simuladas) e seus estados de contexto correspondentes
 TIMELINE_CHECKPOINTS = [
-    {"hour": 0.0,  "contexts": {"C1_Internet": True,  "C2_Battery": True,  "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": True}},
-    {"hour": 2.2,  "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": True}},
-    {"hour": 3.5,  "contexts": {"C1_Internet": False, "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": True}},
-    {"hour": 4.1,  "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": True}},
-    {"hour": 6.3,  "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": False}},
-    {"hour": 7.2,  "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": False}},
-    {"hour": 8.8,  "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": False}},
-    {"hour": 13.0, "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": False, "C5_PatientOK": False}},
-    {"hour": 15.2, "contexts": {"C1_Internet": False, "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": False, "C5_PatientOK": False}},
-    {"hour": 16.2, "contexts": {"C1_Internet": True,  "C2_Battery": False, "C3_Doctor": True,  "C4_Drug": False, "C5_PatientOK": False}},
-    {"hour": 17.3, "contexts": {"C1_Internet": True,  "C2_Battery": True,  "C3_Doctor": True,  "C4_Drug": False, "C5_PatientOK": False}},
-    {"hour": 20.0, "contexts": {"C1_Internet": True,  "C2_Battery": True,  "C3_Doctor": True,  "C4_Drug": True,  "C5_PatientOK": True}}
+    {"hour": 0.0,  "contexts": {"c1-internet": True,  "c2-battery": True,  "c3-doctor": True,  "c4-drug": True,  "c5-patientok": True}},
+    {"hour": 2.2,  "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": True}},
+    {"hour": 3.5,  "contexts": {"c1-internet": False, "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": True}},
+    {"hour": 4.1,  "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": True}},
+    {"hour": 6.3,  "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": False}},
+    {"hour": 7.2,  "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": False}},
+    {"hour": 8.8,  "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": True,  "c5-patientok": False}},
+    {"hour": 13.0, "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": False, "c5-patientok": False}},
+    {"hour": 15.2, "contexts": {"c1-internet": False, "c2-battery": False, "c3-doctor": True,  "c4-drug": False, "c5-patientok": False}},
+    {"hour": 16.2, "contexts": {"c1-internet": True,  "c2-battery": False, "c3-doctor": True,  "c4-drug": False, "c5-patientok": False}},
+    {"hour": 17.3, "contexts": {"c1-internet": True,  "c2-battery": True,  "c3-doctor": True,  "c4-drug": False, "c5-patientok": False}},
+    {"hour": 20.0, "contexts": {"c1-internet": True,  "c2-battery": True,  "c3-doctor": True,  "c4-drug": True,  "c5-patientok": True}}
 ]
 
 def clear_old_telemetry():
     if os.path.exists(TELEMETRY_FILE):
         open(TELEMETRY_FILE, 'w').close()
 
-def update_system_context(contexts):
-    """Injeta as mudanças de contexto no microsserviço/gateway."""
-    for ctx_key, state in contexts.items():
-        try:
-            requests.post(f"{CONTEXT_URL}/{ctx_key}?state={'true' if state else 'false'}", timeout=1.0)
-        except Exception:
-            pass
-
 def run_simulation():
     clear_old_telemetry()
-    print("[SIMULAÇÃO TAS] Replay temporal do GoalD iniciado...")
+    print("[SIMULAÇÃO TAS] Gerando intervalos contínuos de contexto...")
     
     client_results = []
+    TIME_SCALE = 0.5  # Fator de velocidade em segundos por checkpoint
     
-    # Fator de compressão: 1 hora simulada = 0.5 segundo real para agilizar os testes
-    TIME_SCALE = 0.5 
-    test_start_epoch = int(time.time() * 1000)
-    
+    # Rastreia o momento de início de cada estado de contexto
+    active_states = {}
+    state_start_times = {}
+
+    base_time = time.time() * 1000
+
     for idx, cp in enumerate(TIMELINE_CHECKPOINTS):
         sim_hour = cp["hour"]
         contexts = cp["contexts"]
-        
-        print(f" -> [Tempo Simulado: {sim_hour}h] Aplicando alteração de contexto...")
-        update_system_context(contexts)
-        
-        # Constrói cabeçalhos HTTP com o estado atual dos contextos do gráfico
-        headers = {
-            "X-Target-Goal": "G11_Treatment",
-            "Content-Type": "application/json",
-            "X-Context-Internet": str(contexts["C1_Internet"]),
-            "X-Context-Battery": str(contexts["C2_Battery"]),
-            "X-Context-Doctor": str(contexts["C3_Doctor"]),
-            "X-Context-Drug": str(contexts["C4_Drug"]),
-            "X-Context-Patient": str(contexts["C5_PatientOK"])
-        }
-        
-        req_start = int(time.time() * 1000)
-        status_code = 500
+        current_time = base_time + (sim_hour * 3600 * 1000 / 3600) * (TIME_SCALE * 1000 / 0.5) # Escala proporcional
+
+        for ctx_name, state in contexts.items():
+            prev_state = active_states.get(ctx_name)
+            
+            # Se o estado mudou ou é o primeiro registro
+            if prev_state != state:
+                # Se já havia um estado anterior ativo, fecha o intervalo dele
+                if prev_state is not None:
+                    old_label = ctx_name if prev_state else f"!{ctx_name}"
+                    client_results.append({
+                        "scenario": 1,
+                        "execIndex": idx,
+                        "plotIndex": 0,
+                        "label": old_label,
+                        "start": state_start_times[ctx_name],
+                        "end": int(current_time),
+                        "type": "context"
+                    })
+                # Inicia o novo estado
+                active_states[ctx_name] = state
+                state_start_times[ctx_name] = int(current_time)
+
+        # Dispara requisição HTTP simulando a carga no gateway
         try:
-            res = requests.post(GATEWAY_URL, headers=headers, json={"patientId": "P-101"}, timeout=3.0)
-            status_code = res.status_code
+            requests.post(GATEWAY_URL, json={"patientId": "P-101"}, timeout=1.0)
         except Exception:
             pass
-        req_end = int(time.time() * 1000)
-        
-        # Grava os estados ativos para a geração do gráfico equivalente
-        for ctx_name, state in contexts.items():
-            label_name = ctx_name.lower().replace('_', '-')
-            if not state:
-                label_name = f"!{label_name}"
-                
-            client_results.append({
-                "scenario": 1,
-                "execIndex": idx + 1,
-                "plotIndex": 0,
-                "label": label_name,
-                "start": req_start,
-                "end": req_end,
-                "type": "context"
-            })
-            
+
+    # Fecha os estados pendentes até o final da simulação (20h)
+    final_time = base_time + (20.0 * 1000 * TIME_SCALE * 2)
+    for ctx_name, state in active_states.items():
+        label = ctx_name if state else f"!{ctx_name}"
         client_results.append({
             "scenario": 1,
-            "execIndex": idx + 1,
+            "execIndex": 99,
             "plotIndex": 0,
-            "label": "client-request",
-            "start": req_start,
-            "end": req_end,
-            "type": f"http-{status_code}"
+            "label": label,
+            "start": state_start_times[ctx_name],
+            "end": int(final_time),
+            "type": "context"
         })
-        
-        time.sleep(TIME_SCALE)
 
     return client_results
 
 def process_results(client_results):
-    print("Consolidando telemetria interna com os marcos temporais...")
     server_results = []
-    
     if os.path.exists(TELEMETRY_FILE):
         with open(TELEMETRY_FILE, 'r') as f:
             for line in f:
@@ -128,28 +108,14 @@ def process_results(client_results):
                     data = json.loads(line)
                     dt_obj = datetime.fromisoformat(data["timestamp"].replace('Z', '+00:00'))
                     end_ms = int(dt_obj.timestamp() * 1000)
-                    
                     if data["type"] == "execution":
                         duration_ms = data.get("durationMs", 0)
                         start_ms = int(end_ms - duration_ms)
                         label = data.get("bundle", "unknown")
-                        plot_index = 1
-                        type_label = "bundle"
-                    else:
-                        start_ms = end_ms
-                        label = f"{data.get('source')}-{data.get('eventName')}"
-                        plot_index = 2
-                        type_label = "event"
-                    
-                    server_results.append({
-                        "scenario": 1,
-                        "execIndex": 1,
-                        "plotIndex": plot_index,
-                        "label": label,
-                        "start": start_ms,
-                        "end": end_ms,
-                        "type": type_label
-                    })
+                        server_results.append({
+                            "scenario": 1, "execIndex": 1, "plotIndex": 1,
+                            "label": label, "start": start_ms, "end": end_ms, "type": "bundle"
+                        })
                 except Exception:
                     pass
 
@@ -160,11 +126,9 @@ def process_results(client_results):
         df['end'] = df['end'] - min_start
         
     df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\n[SUCESSO] Simulação concluída! Dados salvos em: {OUTPUT_CSV}")
+    print(f"[SUCESSO] Dados contínuos salvos em: {OUTPUT_CSV}")
     return df
 
 if __name__ == "__main__":
     client_data = run_simulation()
-    time.sleep(1)
-    df_final = process_results(client_data)
-    print(df_final.head(10).to_string())
+    process_results(client_data)
