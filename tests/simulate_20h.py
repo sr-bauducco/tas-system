@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
 import requests
 import time
+import os
+import json
 
-print("[SIMULAÇÃO 20h] Iniciando varredura milimétrica de contextos...")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) == "tests" else SCRIPT_DIR
+TELEMETRY_FILE = os.path.join(ROOT_DIR, "bundle_activations.jsonl")
+STEP_TIMES_FILE = os.path.join(ROOT_DIR, "step_times.json")
+
+# Limpeza de lixo antigo
+if os.path.exists(TELEMETRY_FILE):
+    try:
+        os.remove(TELEMETRY_FILE)
+    except Exception:
+        print(f"[ERRO] O arquivo está bloqueado. Rode 'sudo rm {TELEMETRY_FILE}' no terminal.")
+        exit(1)
+
+print("[SIMULAÇÃO 20h] Iniciando varredura de contextos...")
 
 def send_request(endpoint, goal, contexts, step):
     headers = {
@@ -17,15 +32,17 @@ def send_request(endpoint, goal, contexts, step):
         "X-Exec-Index": str(step)
     }
     try:
-        # A requisição vai para G1 e G4. O ms-intelligence vai interceptar e gravar a telemetria.
-        # Ignoramos o 404 final porque a decisão autonômica já foi registrada com sucesso.
         requests.post(f"http://localhost:8080{endpoint}", headers=headers, json={"patientId": "P-101"}, timeout=3.0)
     except Exception:
         pass
 
-# Loop de 0h a 20h (em passos de 0.5h)
+step_times = {}
+
 for step in range(41):
     t = step * 0.5
+    
+    # Grava o tempo físico exato em que este step lógico começou
+    step_times[str(step)] = time.time() * 1000
     
     battery_is_low = (0 <= t <= 3.5) or (16.5 <= t <= 20)
     patient_is_ok  = (0 <= t <= 6.5) or (15.5 <= t <= 17.5)
@@ -48,6 +65,10 @@ for step in range(41):
         
     time.sleep(0.15) 
     if step % 10 == 0:
-        print(f" -> Progresso: {t} horas simuladas com sucesso...")
+        print(f" -> Progresso: {t} horas simuladas...")
 
-print("[SIMULAÇÃO 20h] Concluída! O Java gravou a telemetria.")
+# Salva o mapa de tempo para o gerador de gráfico ler
+with open(STEP_TIMES_FILE, "w") as f:
+    json.dump(step_times, f)
+
+print("[SIMULAÇÃO 20h] Concluída! Pronto para o gráfico final.")
