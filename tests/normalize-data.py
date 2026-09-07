@@ -195,7 +195,7 @@ def plot_activation_chart(output_path: str = 'activation_chart_hours.png') -> No
     ax.set_yticklabels(y_labels, fontsize=9)
     ax.set_xlim(0, 20)
     ax.set_xlabel('Tempo (horas)', fontsize=12)
-    ax.set_title('Ativação de componentes do TAS ao longo do tempo', fontsize=14)
+    ax.set_title('Ativação de componentes do TAS ao longo do tempo na abordagem OSGi', fontsize=14)
     ax.grid(axis='x', linestyle='--', alpha=0.35)
     ax.invert_yaxis()
 
