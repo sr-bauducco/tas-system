@@ -1,8 +1,43 @@
-target/
-*.iml
+# =========================
+# Java & Maven
+# =========================
+**/target/
+*.jar
+*.war
+*.ear
+
+# =========================
+# IDEs (IntelliJ, Eclipse, VSCode)
+# =========================
 .idea/
+*.iml
 .settings/
 .project
 .classpath
-.DS_Store
+.vscode/
+
+# =========================
+# Python (Simuladores)
+# =========================
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# =========================
+# Logs e OS
+# =========================
 *.log
+.DS_Store
+Thumbs.db
+
+# =========================
+# Arquivos Temporários do TCC (Simulação e Gráficos)
+# =========================
+# Ignora os arquivos de log de telemetria e réguas de tempo gerados no teste
+bundle_activations.jsonl
+time_bounds.txt
+step_times.json
+
+# Ignora os gráficos gerados na raiz (você deve mover o final manualmente para a pasta results/)
+arquitetura_microsservicos_chart*.png
